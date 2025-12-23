@@ -1,75 +1,100 @@
-/******** FIREBASE CONFIG ********/
-var firebaseConfig = {
-  apiKey: "AIzaSyA2yJhcRYfQlVC_xXu-CVmZd_Dx7486uPs",
-  authDomain: "radioptt-aa99f.firebaseapp.com",
-  databaseURL: "https://radioptt-aa99f-default-rtdb.firebaseio.com",
-  projectId: "radioptt-aa99f"
-};
-
-firebase.initializeApp(firebaseConfig);
-var db = firebase.database();
-
-/******** SETTINGS ********/
+/******** CONFIG ********/
 const PASSWORD = "7878";
 
-/******** STATE ********/
-let channel = "channel_1";
-let recording = false;
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let processor, source, stream;
+/******** FIREBASE ********/
+firebase.initializeApp({
+  apiKey: "AIzaSyA2yJhcRYfQlVC_xXu-CVmZd_Dx7486uPs",
+  databaseURL: "https://radioptt-aa99f-default-rtdb.firebaseio.com"
+});
+const db = firebase.database();
 
-/******** PASSWORD CHECK ********/
-let userPass = prompt("Enter Channel Password (7878)");
-if (userPass !== PASSWORD) {
-  alert("Wrong Password");
-  throw new Error("Unauthorized");
+/******** UI ********/
+const netEl = document.getElementById("net");
+function setNet(status){
+  if(status==="good"){ netEl.className="net good"; netEl.innerText="🟢 Good"; }
+  if(status==="poor"){ netEl.className="net poor"; netEl.innerText="🟡 Poor"; }
+  if(status==="off"){ netEl.className="net off"; netEl.innerText="🔴 Offline"; }
 }
 
-/******** CHANNEL CHANGE ********/
+/******** PASSWORD ********/
+function checkPass(){
+  if(document.getElementById("password").value !== PASSWORD){
+    alert("Wrong Password"); return;
+  }
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+}
+
+/******** WEBRTC ********/
+let pc, localStream;
+let channel = "1";
+
+async function initPC(){
+  if(pc) pc.close();
+  pc = new RTCPeerConnection({
+    iceServers:[{urls:"stun:stun.l.google.com:19302"}]
+  });
+
+  pc.onconnectionstatechange = () => {
+    if(pc.connectionState==="connected") setNet("good");
+    else if(pc.connectionState==="disconnected") setNet("poor");
+    else if(pc.connectionState==="failed") setNet("off");
+  };
+
+  pc.ontrack = e => {
+    const a = document.createElement("audio");
+    a.srcObject = e.streams[0];
+    a.autoplay = true;
+  };
+
+  if(!localStream){
+    try{
+      localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    }catch{
+      alert("Mic permission denied");
+      setNet("off"); return;
+    }
+  }
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+}
+
+initPC();
+
+/******** CHANNEL ********/
 document.getElementById("channel").onchange = e => {
   channel = e.target.value;
+  initPC(); // reset on channel change
 };
 
-/******** PTT BUTTON ********/
-document.getElementById("ptt").onmousedown = startTalk;
-document.getElementById("ptt").onmouseup = stopTalk;
+/******** SIGNALING ********/
+const offerRef = () => db.ref(`rooms/channel_${channel}/offer`);
+const answerRef = () => db.ref(`rooms/channel_${channel}/answer`);
 
-function startTalk() {
-  recording = true;
-  document.getElementById("status").innerText = "🔴 Transmitting";
+/******** PTT ********/
+document.getElementById("ptt").onmousedown = async () => {
+  document.getElementById("status").innerText="🔴 Talking";
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  offerRef().set(offer);
 
-  navigator.mediaDevices.getUserMedia({ audio: true }).then(s => {
-    stream = s;
-    source = audioCtx.createMediaStreamSource(stream);
-    processor = audioCtx.createScriptProcessor(2048, 1, 1);
-
-    source.connect(processor);
-    processor.connect(audioCtx.destination);
-
-    processor.onaudioprocess = e => {
-      if (!recording) return;
-      let data = Array.from(e.inputBuffer.getChannelData(0));
-      db.ref("radio/" + channel + "/audio").set(data);
-    };
+  answerRef().off();
+  answerRef().on("value", snap=>{
+    if(snap.val()) pc.setRemoteDescription(new RTCSessionDescription(snap.val()));
   });
-}
+};
 
-function stopTalk() {
-  recording = false;
-  document.getElementById("status").innerText = "🟢 Listening";
-  if (stream) stream.getTracks().forEach(t => t.stop());
-}
+document.getElementById("ptt").onmouseup = ()=>{
+  document.getElementById("status").innerText="🟢 Ready";
+};
 
-/******** RECEIVE AUDIO ********/
-db.ref("radio/" + channel + "/audio").on("value", snap => {
-  let data = snap.val();
-  if (!data || recording) return;
-
-  let buffer = audioCtx.createBuffer(1, data.length, audioCtx.sampleRate);
-  buffer.copyToChannel(new Float32Array(data), 0);
-
-  let src = audioCtx.createBufferSource();
-  src.buffer = buffer;
-  src.connect(audioCtx.destination);
-  src.start();
+offerRef().on("value", async snap=>{
+  if(!snap.val()) return;
+  await pc.setRemoteDescription(new RTCSessionDescription(snap.val()));
+  const ans = await pc.createAnswer();
+  await pc.setLocalDescription(ans);
+  answerRef().set(ans);
 });
+
+/******** NETWORK WATCH ********/
+window.addEventListener("online", ()=>setNet("good"));
+window.addEventListener("offline", ()=>setNet("off"));
