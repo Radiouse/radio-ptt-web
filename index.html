@@ -1,36 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Radio PTT</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="style.css">
+<title>Information Form</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+form{background:#fff;padding:20px;border-radius:10px;max-width:400px;margin:auto}
+input,button{width:100%;padding:10px;margin:8px 0}
+button{background:#0088cc;color:#fff;border:none}
+</style>
 </head>
 <body>
 
-<div class="glass login" id="login">
-  <h2>🔐 Enter Password</h2>
-  <input type="password" id="password" placeholder="••••">
-  <button onclick="unlock()">Unlock</button>
-</div>
+<form onsubmit="saveData();return false;">
+<h2>User Information</h2>
 
-<div class="glass app hidden" id="app">
-  <div class="top">
-    <span>📻 Radio PTT</span>
-    <span id="net" class="net online">🟢 Online</span>
-  </div>
+<input id="name" placeholder="Name" required>
+<input id="phone" placeholder="Phone" required>
+<input type="file" id="photo" accept="image/*" capture="camera" required>
 
-  <select id="channel">
-    <option>Channel 1</option>
-    <option>Channel 2</option>
-    <option>Channel 3</option>
-  </select>
+<button type="button" onclick="getLocation()">📍 Capture Location</button>
+<p id="loc"></p>
 
-  <div class="status">Ready</div>
+<button type="submit">Submit</button>
+</form>
 
-  <div class="ptt">🎙 HOLD TO TALK</div>
-</div>
+<script>
+let latitude="", longitude="";
 
-<script src="app.js"></script>
+function getLocation(){
+navigator.geolocation.getCurrentPosition(pos=>{
+latitude=pos.coords.latitude;
+longitude=pos.coords.longitude;
+document.getElementById("loc").innerText=
+"Location Captured ✔️";
+});
+}
+
+function saveData(){
+alert(
+"Saved!\nName: "+name.value+
+"\nPhone: "+phone.value+
+"\nLat: "+latitude+
+"\nLng: "+longitude
+);
+}
+</script>
+
 </body>
 </html>
