@@ -1,38 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Radio PTT</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Radio PTT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="card" id="login">
+<div class="glass login" id="login">
   <h2>🔐 Enter Password</h2>
   <input type="password" id="password" placeholder="••••">
-  <button onclick="checkPass()">Unlock</button>
+  <button onclick="unlock()">Unlock</button>
 </div>
 
-<div class="card hidden" id="app">
-  <div class="topbar">
+<div class="glass app hidden" id="app">
+  <div class="top">
     <span>📻 Radio PTT</span>
-    <span id="net" class="net good">🟢 Good</span>
+    <span id="net" class="net online">🟢 Online</span>
   </div>
 
   <select id="channel">
-    <option value="1">Channel 1</option>
-    <option value="2">Channel 2</option>
-    <option value="3">Channel 3</option>
+    <option>Channel 1</option>
+    <option>Channel 2</option>
+    <option>Channel 3</option>
   </select>
 
-  <p id="status">🟢 Ready</p>
+  <div class="status">Ready</div>
 
-  <button id="ptt">🎙 HOLD TO TALK</button>
+  <div class="ptt">🎙 HOLD TO TALK</div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
