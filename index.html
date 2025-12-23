@@ -1,51 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Information Form</title>
+<title>User Info Capture</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{font-family:Arial;background:#f4f6f8;padding:20px}
-form{background:#fff;padding:20px;border-radius:10px;max-width:400px;margin:auto}
-input,button{width:100%;padding:10px;margin:8px 0}
+body{font-family:Arial;background:#f2f4f7;padding:20px}
+.container{max-width:420px;margin:auto;background:#fff;padding:20px;border-radius:12px}
+input,button{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc}
 button{background:#0088cc;color:#fff;border:none}
+#status{color:green;text-align:center;font-size:14px}
 </style>
 </head>
-<body>
 
-<form onsubmit="saveData();return false;">
+<body>
+<div class="container">
 <h2>User Information</h2>
 
-<input id="name" placeholder="Name" required>
-<input id="phone" placeholder="Phone" required>
-<input type="file" id="photo" accept="image/*" capture="camera" required>
+<input id="name" placeholder="Full Name" required>
+<input id="phone" placeholder="Phone Number" required>
 
-<button type="button" onclick="getLocation()">📍 Capture Location</button>
-<p id="loc"></p>
+<button onclick="getLocation()">📍 Capture Location</button>
+<p id="status"></p>
 
-<button type="submit">Submit</button>
-</form>
+<button onclick="submitData()">Submit</button>
+</div>
 
 <script>
-let latitude="", longitude="";
+let lat="", lng="";
 
 function getLocation(){
-navigator.geolocation.getCurrentPosition(pos=>{
-latitude=pos.coords.latitude;
-longitude=pos.coords.longitude;
-document.getElementById("loc").innerText=
-"Location Captured ✔️";
-});
-}
-
-function saveData(){
-alert(
-"Saved!\nName: "+name.value+
-"\nPhone: "+phone.value+
-"\nLat: "+latitude+
-"\nLng: "+longitude
+navigator.geolocation.getCurrentPosition(
+pos=>{
+lat=pos.coords.latitude;
+lng=pos.coords.longitude;
+status.innerText="Location captured ✔️";
+},
+()=>alert("Location permission required")
 );
 }
-</script>
 
+function submitData(){
+
+  // 🔴 YAHAN APNA NEW TOKEN PASTE KARO
+  let BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
+
+  // ✅ AAPKA CHAT ID (ALREADY FILLED)
+  let CHAT_ID = "543961277";
+
+  let message =
+  "📩 New Submission\n\n"+
+  "👤 Name: "+name.value+"\n"+
+  "📞 Phone: "+phone.value+"\n"+
+  "📍 Location: "+lat+", "+lng;
+
+  let url =
+  "https://api.telegram.org/bot"+BOT_TOKEN+
+  "/sendMessage?chat_id="+CHAT_ID+
+  "&text="+encodeURIComponent(message);
+
+  fetch(url)
+  .then(()=>alert("Sent to Telegram ✅"))
+  .catch(()=>alert("Error ❌"));
+}
+</script>
 </body>
 </html>
