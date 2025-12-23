@@ -1,0 +1,38 @@
+body {
+  background: #0f172a;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding-top: 40px;
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+
+select {
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+#status {
+  margin: 10px;
+  font-size: 16px;
+}
+
+button {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fff;
+  font-size: 18px;
+  border: none;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(0.95);
+  background: #991b1b;
+}
