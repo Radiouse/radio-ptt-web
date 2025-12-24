@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PIN & IFSC Finder | Govt Style</title>
+<title>PIN & IFSC Finder | Govt Style (Glass)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <!-- Leaflet -->
@@ -10,88 +10,66 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
-:root{
-  --bg:#eef3f9;
-  --card:#ffffff;
-  --text:#1f2937;
-  --blue:#0b5ed7;
-}
+:root{--blue:#0b5ed7;--text:#e5e7eb}
 body{
-  margin:0;
-  font-family:Segoe UI,Arial,sans-serif;
-  background:linear-gradient(135deg,#e8eef7,#f7faff);
-  color:var(--text);
+  margin:0;font-family:Segoe UI,Arial,sans-serif;color:var(--text);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(11,94,215,.25), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(14,165,233,.25), transparent 45%),
+    radial-gradient(circle at 50% 80%, rgba(99,102,241,.25), transparent 40%),
+    linear-gradient(135deg,#020617,#020617);
+  min-height:100vh;
 }
 header{
-  background:linear-gradient(90deg,#0b3c6d,#0b5ed7);
-  color:#fff;
-  padding:18px;
+  position:sticky;top:0;z-index:10;
+  background:rgba(2,6,23,.65);
+  backdrop-filter: blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.15);
+  color:#fff;padding:18px;
 }
-.container{
-  max-width:1200px;
-  margin:auto;
-  padding:16px;
-}
+.container{max-width:1200px;margin:auto;padding:16px}
 .card{
-  background:var(--card);
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:16px;
-  box-shadow:0 10px 25px rgba(0,0,0,.18);
+  background:rgba(255,255,255,0.08);
+  backdrop-filter: blur(18px) saturate(140%);
+  border-radius:18px;padding:18px;margin-bottom:18px;
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 25px 45px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.15);
+  transition:.35s;
 }
+.card:hover{transform:translateY(-6px)}
 input,button{
-  padding:10px 12px;
-  margin:4px;
-  border-radius:10px;
-  border:1px solid #d1d5db;
+  padding:10px 14px;margin:4px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.12);color:#fff;
 }
 button{
-  background:#0b5ed7;
-  color:#fff;
-  border:none;
+  background:linear-gradient(145deg,rgba(11,94,215,.9),rgba(8,66,152,.9));
+  box-shadow:0 10px 25px rgba(11,94,215,.55), inset 0 1px 0 rgba(255,255,255,.25);
   cursor:pointer;
 }
-button:disabled{
-  opacity:.6;
-  cursor:not-allowed;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-th,td{
-  padding:8px;
-  border-bottom:1px solid #e5e7eb;
-}
-th{background:#f1f5f9}
-
-#map{
-  height:300px;
-  border-radius:12px;
-}
-
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.15)}
+th{background:rgba(255,255,255,.18)}
+td{background:rgba(255,255,255,.08)}
 #globalError{
-  display:none;
-  background:#b91c1c;
-  color:#fff;
-  padding:10px;
-  text-align:center;
-  font-size:13px;
+  display:none;background:rgba(185,28,28,.75);
+  backdrop-filter: blur(12px);
+  padding:10px;text-align:center
 }
 
+/* MAP COLLAPSE */
+.map-header{display:flex;justify-content:space-between;align-items:center}
+#mapWrapper{max-height:0;opacity:0;overflow:hidden;transition:.45s}
+#mapWrapper.expanded{max-height:420px;opacity:1}
+#map{height:300px;margin-top:14px;border-radius:16px;border:1px solid rgba(255,255,255,.2)}
 footer{
-  background:#f8fafc;
-  border-top:2px solid #0b5ed7;
-  padding:14px;
-  text-align:center;
-  font-size:12px;
+  background:rgba(2,6,23,.65);border-top:1px solid rgba(255,255,255,.15);
+  padding:14px;text-align:center;font-size:12px
 }
 </style>
 </head>
 
 <body>
-
 <div id="globalError">⚠️ Error</div>
 
 <header>
@@ -101,46 +79,47 @@ footer{
 
 <div class="container">
 
-<!-- LOCATION -->
+<!-- 1️⃣ LOCATION -->
 <div class="card">
   <h3>📍 Your Location</h3>
   <button onclick="detectLocation()">Use My Location</button>
-  <button onclick="drawRadius(5)">5 km</button>
-  <button onclick="drawRadius(10)">10 km</button>
+  <button onclick="drawRadius(5); autoOpenMap()">5 km</button>
+  <button onclick="drawRadius(10); autoOpenMap()">10 km</button>
   <div id="locInfo"></div>
 </div>
 
-<!-- MAP -->
+<!-- 2️⃣ BANKS / ATMs -->
 <div class="card">
-  <h3>🗺 Map</h3>
-  <div id="map"></div>
-</div>
-
-<!-- BANK / ATM -->
-<div class="card">
-  <h3>🏦 Banks / 🏧 ATMs within Radius</h3>
-
+  <h3>🏦 / 🏧 Banks & ATMs</h3>
   <label><input type="checkbox" id="showBanks" checked> Banks</label>
-  &nbsp;&nbsp;
-  <label><input type="checkbox" id="showATMs"> ATMs</label>
-
+  <label><input type="checkbox" id="showATMs" checked> ATMs</label>
   <div id="bankList">No data</div>
 </div>
 
-<!-- PIN SEARCH -->
+<!-- 3️⃣ PIN / IFSC -->
 <div class="card">
-  <h3>📮 PIN Code Details</h3>
+  <h3>📮 PIN Code</h3>
   <input id="pinInput" placeholder="6-digit PIN">
   <button onclick="findPIN()">Search</button>
   <div id="pinResult"></div>
 </div>
 
-<!-- IFSC SEARCH -->
 <div class="card">
-  <h3>🏦 IFSC Code Details</h3>
-  <input id="ifscInput" placeholder="IFSC Code">
+  <h3>🏦 IFSC Code</h3>
+  <input id="ifscInput" placeholder="IFSC">
   <button onclick="findIFSC()">Search</button>
   <div id="ifscResult"></div>
+</div>
+
+<!-- 4️⃣ MAP (BOTTOM, COLLAPSIBLE) -->
+<div class="card map-card">
+  <div class="map-header">
+    <h3>🗺 Nearby Places Map</h3>
+    <button id="mapToggleBtn" onclick="toggleMap()">Show Map ⬇️</button>
+  </div>
+  <div id="mapWrapper">
+    <div id="map"></div>
+  </div>
 </div>
 
 </div>
@@ -151,219 +130,128 @@ footer{
 </footer>
 
 <script>
-/* ================= ERROR ================= */
-function showError(msg){
-  globalError.innerText = "⚠️ " + msg;
-  globalError.style.display = "block";
+/* ERROR */
+function showError(m){globalError.innerText="⚠️ "+m;globalError.style.display="block"}
+function clearError(){globalError.style.display="none"}
+
+/* MAP */
+const map=L.map("map").setView([22.97,78.65],5);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+let userLat=null,userLon=null,userMarker=null,radiusCircle=null,poiMarkers=[];
+
+/* COLLAPSE */
+function toggleMap(){
+  const w=document.getElementById("mapWrapper");
+  const b=document.getElementById("mapToggleBtn");
+  if(w.classList.contains("expanded")){
+    w.classList.remove("expanded"); b.innerText="Show Map ⬇️";
+  }else{
+    w.classList.add("expanded"); b.innerText="Hide Map ⬆️";
+    setTimeout(()=>map.invalidateSize(),300);
+  }
 }
-function clearError(){
-  globalError.style.display = "none";
+function autoOpenMap(){
+  const w=document.getElementById("mapWrapper");
+  if(!w.classList.contains("expanded")) toggleMap();
 }
 
-/* ================= MAP INIT ================= */
-const map = L.map("map").setView([22.97,78.65],5);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-  attribution:"© OpenStreetMap"
-}).addTo(map);
-
-let userLat=null, userLon=null;
-let userMarker=null, radiusCircle=null;
-let poiMarkers=[];
-
-/* ================= LOCATION ================= */
+/* LOCATION */
 function detectLocation(){
   clearError();
-  if(!navigator.geolocation){
-    showError("Geolocation not supported");
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    pos=>{
-      userLat = pos.coords.latitude;
-      userLon = pos.coords.longitude;
-
-      if(userMarker) map.removeLayer(userMarker);
-      userMarker = L.marker([userLat,userLon])
-        .addTo(map)
-        .bindPopup("Your Location")
-        .openPopup();
-
-      map.setView([userLat,userLon],12);
-      locInfo.innerText =
-        `Latitude: ${userLat.toFixed(4)}, Longitude: ${userLon.toFixed(4)}`;
-    },
-    ()=>{
-      showError("Location permission denied");
-    },
-    {enableHighAccuracy:true,timeout:10000}
-  );
+  if(!navigator.geolocation){showError("Geolocation not supported");return}
+  navigator.geolocation.getCurrentPosition(p=>{
+    userLat=p.coords.latitude; userLon=p.coords.longitude;
+    if(userMarker) map.removeLayer(userMarker);
+    userMarker=L.marker([userLat,userLon]).addTo(map).bindPopup("Your Location").openPopup();
+    map.setView([userLat,userLon],12);
+    locInfo.innerText=`Lat ${userLat.toFixed(4)}, Lon ${userLon.toFixed(4)}`;
+  },()=>showError("Location permission denied"),{enableHighAccuracy:true,timeout:10000});
 }
 
-/* ================= RADIUS ================= */
+/* RADIUS */
 function drawRadius(km){
-  if(!userLat || !userLon){
-    showError("Detect location first");
-    return;
-  }
-
+  if(!userLat||!userLon){showError("Detect location first");return}
   if(radiusCircle) map.removeLayer(radiusCircle);
-  radiusCircle = L.circle([userLat,userLon],{
-    radius: km*1000,
-    color:"#0b5ed7",
-    fillOpacity:0.15
-  }).addTo(map);
-
+  radiusCircle=L.circle([userLat,userLon],{radius:km*1000,color:"#0b5ed7",fillOpacity:.15}).addTo(map);
   map.fitBounds(radiusCircle.getBounds());
   findNearbyPlaces(km);
 }
 
-/* ================= DISTANCE ================= */
-function distanceKm(lat1,lon1,lat2,lon2){
-  const R=6371;
-  const dLat=(lat2-lat1)*Math.PI/180;
-  const dLon=(lon2-lon1)*Math.PI/180;
-  const a=
-    Math.sin(dLat/2)**2 +
-    Math.cos(lat1*Math.PI/180) *
-    Math.cos(lat2*Math.PI/180) *
-    Math.sin(dLon/2)**2;
-  return (R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))).toFixed(2);
+/* DISTANCE */
+function distanceKm(a,b,c,d){
+  const R=6371, dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
+  return (R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))).toFixed(2);
 }
 
-/* ================= BANK / ATM ================= */
+/* BANK / ATM (HARDENED) */
 async function findNearbyPlaces(km){
-  clearError();
-  bankList.innerHTML="Searching…";
+  clearError(); bankList.innerText="Searching nearby…";
+  poiMarkers.forEach(m=>map.removeLayer(m)); poiMarkers=[];
+  if(!showBanks.checked && !showATMs.checked){bankList.innerText="Select Bank or ATM";return}
 
-  poiMarkers.forEach(m=>map.removeLayer(m));
-  poiMarkers=[];
+  const r=km*1000, parts=[];
+  if(showBanks.checked) parts.push(`
+    node["amenity"="bank"](around:${r},${userLat},${userLon});
+    way["amenity"="bank"](around:${r},${userLat},${userLon});
+    node["office"="financial"](around:${r},${userLat},${userLon});
+  `);
+  if(showATMs.checked) parts.push(`
+    node["amenity"="atm"](around:${r},${userLat},${userLon});
+    node["atm"="yes"](around:${r},${userLat},${userLon});
+  `);
 
-  const showBank = showBanks.checked;
-  const showATM  = showATMs.checked;
-
-  if(!showBank && !showATM){
-    bankList.innerHTML="Select Bank or ATM";
-    return;
-  }
-
-  const radius = km*1000;
-  let parts=[];
-  if(showBank) parts.push(`node["amenity"="bank"]`);
-  if(showATM)  parts.push(`node["amenity"="atm"]`);
-
-  const query = `
-    [out:json];
-    (
-      ${parts.map(p=>`${p}(around:${radius},${userLat},${userLon});`).join("")}
-    );
-    out body;
-  `;
-
+  const q=`[out:json][timeout:25];(${parts.join("")});out center tags;`;
   try{
-    const res = await fetch(
-      "https://overpass-api.de/api/interpreter",
-      {method:"POST",body:query}
-    );
-    const data = await res.json();
-
-    if(!data.elements || data.elements.length===0){
-      bankList.innerHTML="No places found in this radius.";
-      return;
+    const res=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:q});
+    const d=await res.json();
+    if(!d.elements||!d.elements.length){
+      if(km<20){bankList.innerText=`No places in ${km} km, expanding…`;return setTimeout(()=>findNearbyPlaces(km*2),700)}
+      return bankList.innerText="No banks / ATMs found nearby.";
     }
-
-    let rows=[];
-    data.elements.forEach(e=>{
-      if(!e.lat || !e.lon) return;
-      rows.push({
-        name: e.tags?.name || (e.tags?.amenity==="atm"?"ATM":"Bank"),
-        type: e.tags?.amenity,
-        lat: e.lat,
-        lon: e.lon,
-        dist: distanceKm(userLat,userLon,e.lat,e.lon)
-      });
-    });
-
-    rows.sort((a,b)=>a.dist-b.dist);
+    const rows=d.elements.map(e=>{
+      const lat=e.lat||e.center?.lat, lon=e.lon||e.center?.lon;
+      if(!lat||!lon) return null;
+      return {name:e.tags?.name||"Bank / ATM",type:e.tags?.amenity||e.tags?.office||"financial",
+              lat,lon,dist:distanceKm(userLat,userLon,lat,lon)};
+    }).filter(Boolean).sort((a,b)=>a.dist-b.dist);
 
     let html="<table><tr><th>Name</th><th>Type</th><th>Distance (km)</th><th>Navigate</th></tr>";
     rows.slice(0,25).forEach(r=>{
-      const m=L.marker([r.lat,r.lon])
-        .addTo(map)
-        .bindPopup(`${r.name}<br>${r.dist} km`);
+      const m=L.marker([r.lat,r.lon]).addTo(map).bindPopup(`${r.name}<br>${r.dist} km`);
       poiMarkers.push(m);
-
-      html+=`
-        <tr>
-          <td>${r.name}</td>
-          <td>${r.type.toUpperCase()}</td>
-          <td>${r.dist}</td>
-          <td>
-            <a target="_blank"
-               href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lon}">
-               🧭 Open
-            </a>
-          </td>
-        </tr>`;
+      html+=`<tr><td>${r.name}</td><td>${r.type}</td><td>${r.dist}</td>
+      <td><a target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lon}">🧭 Open</a></td></tr>`;
     });
-    html+="</table>";
-    bankList.innerHTML=html;
-
-  }catch{
-    showError("Unable to load nearby banks / ATMs");
-  }
+    bankList.innerHTML=html+"</table>";
+  }catch{showError("Nearby bank service temporarily unavailable")}
 }
 
-/* ================= PIN ================= */
+/* PIN */
 async function findPIN(){
-  clearError();
-  pinResult.innerHTML="";
-  const pin=pinInput.value.trim();
-  if(pin.length!==6){
-    showError("Enter valid 6-digit PIN");
-    return;
-  }
+  clearError(); pinResult.innerHTML="";
+  const pin=pinInput.value.trim(); if(pin.length!==6) return showError("Enter valid PIN");
   try{
-    const r=await fetch(`https://api.postalpincode.in/pincode/${pin}`);
-    const d=await r.json();
-    if(d[0].Status!=="Success") throw "";
+    const r=await fetch(`https://api.postalpincode.in/pincode/${pin}`), d=await r.json();
+    if(d[0].Status!=="Success") throw 0;
     const p=d[0].PostOffice[0];
-    pinResult.innerHTML=`
-      <table>
-        <tr><th>Post Office</th><td>${p.Name}</td></tr>
-        <tr><th>District</th><td>${p.District}</td></tr>
-        <tr><th>State</th><td>${p.State}</td></tr>
-      </table>`;
-  }catch{
-    showError("PIN not found");
-  }
+    pinResult.innerHTML=`<table><tr><th>Post Office</th><td>${p.Name}</td></tr>
+      <tr><th>District</th><td>${p.District}</td></tr><tr><th>State</th><td>${p.State}</td></tr></table>`;
+  }catch{showError("PIN not found")}
 }
 
-/* ================= IFSC ================= */
+/* IFSC */
 async function findIFSC(){
-  clearError();
-  ifscResult.innerHTML="";
-  const code=ifscInput.value.trim().toUpperCase();
-  if(code.length<8){
-    showError("Invalid IFSC");
-    return;
-  }
+  clearError(); ifscResult.innerHTML="";
+  const c=ifscInput.value.trim().toUpperCase(); if(c.length<8) return showError("Invalid IFSC");
   try{
-    const r=await fetch(`https://ifsc.razorpay.com/${code}`);
-    if(!r.ok) throw "";
+    const r=await fetch(`https://ifsc.razorpay.com/${c}`); if(!r.ok) throw 0;
     const d=await r.json();
-    ifscResult.innerHTML=`
-      <table>
-        <tr><th>Bank</th><td>${d.BANK}</td></tr>
-        <tr><th>Branch</th><td>${d.BRANCH}</td></tr>
-        <tr><th>City</th><td>${d.CITY}</td></tr>
-        <tr><th>State</th><td>${d.STATE}</td></tr>
-      </table>`;
-  }catch{
-    showError("IFSC not found");
-  }
+    ifscResult.innerHTML=`<table><tr><th>Bank</th><td>${d.BANK}</td></tr>
+      <tr><th>Branch</th><td>${d.BRANCH}</td></tr><tr><th>City</th><td>${d.CITY}</td></tr>
+      <tr><th>State</th><td>${d.STATE}</td></tr></table>`;
+  }catch{showError("IFSC not found")}
 }
 </script>
-
 </body>
 </html>
