@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+/* ===== BASE ===== */
 body{
   margin:0;
   font-family:Segoe UI,Arial;
@@ -15,7 +16,7 @@ body{
   color:#fff;
 }
 
-/* LOCK SCREEN */
+/* ===== LOCK SCREEN ===== */
 #lockScreen{
   position:fixed;
   inset:0;
@@ -69,10 +70,8 @@ body{
   font-size:13px;
 }
 
-/* ABOUT CONTENT */
-#aboutContent{
-  display:none;
-}
+/* ===== ABOUT CONTENT ===== */
+#aboutContent{display:none}
 
 /* HEADER */
 header{
@@ -101,37 +100,57 @@ header p{margin:0;font-size:14px;opacity:.8}
   box-shadow:0 30px 60px rgba(0,0,0,.6);
 }
 
-/* 🇮🇳 PROFILE PHOTO */
+/* ===== 3D GLASS PROFILE PHOTO ===== */
 .photo-wrap{
   display:flex;
   justify-content:center;
-  margin-bottom:26px;
+  margin-bottom:28px;
 }
-.tricolor-ring{
+.glass-photo{
+  position:relative;
   width:170px;
   height:170px;
   border-radius:50%;
-  padding:6px;
-  background:conic-gradient(
-    #ff9933 0deg 120deg,
-    #ffffff 120deg 240deg,
-    #138808 240deg 360deg
-  );
-  animation: spin 12s linear infinite;
+  padding:8px;
+
+  background:rgba(255,255,255,0.12);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+
+  border:1px solid rgba(255,255,255,0.35);
+  box-shadow:
+    0 30px 60px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,255,255,0.35);
+
+  transform-style: preserve-3d;
 }
-.tricolor-ring img{
+.glass-photo::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:linear-gradient(
+    135deg,
+    rgba(255,255,255,.35),
+    rgba(255,255,255,.05)
+  );
+  pointer-events:none;
+}
+.glass-photo img{
   width:100%;
   height:100%;
   border-radius:50%;
   object-fit:cover;
-  border:4px solid #020617;
+  background:#020617;
+  transform: translateZ(20px);
 }
-@keyframes spin{
-  from{transform:rotate(0deg)}
-  to{transform:rotate(360deg)}
+.glass-photo:hover{
+  box-shadow:
+    0 40px 90px rgba(0,0,0,0.7),
+    inset 0 1px 0 rgba(255,255,255,0.4);
 }
 
-/* SECTION */
+/* SECTIONS */
 .section{margin-bottom:22px}
 .section h2{margin-bottom:10px;font-size:20px}
 .section p{font-size:15px;line-height:1.7;opacity:.9}
@@ -173,7 +192,7 @@ footer{
   </div>
 </div>
 
-<!-- ABOUT CONTENT -->
+<!-- ===== ABOUT CONTENT ===== -->
 <div id="aboutContent">
 
 <header>
@@ -184,8 +203,9 @@ footer{
 <div class="container">
   <div class="card">
 
+    <!-- 3D GLASS PHOTO -->
     <div class="photo-wrap">
-      <div class="tricolor-ring">
+      <div class="glass-photo">
         <img src="profile.jpg" alt="Rankaj Kumar">
       </div>
     </div>
@@ -194,8 +214,8 @@ footer{
       <h2>👋 Introduction</h2>
       <p>
         My name is <strong>Rankaj Kumar</strong>.  
-        I develop <strong>public utility & location-based web tools</strong>
-        inspired by government-style systems.
+        I design and develop <strong>public utility and location-based web tools</strong>
+        inspired by systems.
       </p>
     </div>
 
@@ -204,15 +224,15 @@ footer{
       <ul>
         <li>📸 GPS Web Camera</li>
         <li>📮 PIN & IFSC Finder</li>
-        <li>🗺 Location-based public services</li>
+        <li>🗺 Location-based citizen services</li>
       </ul>
     </div>
 
     <div class="section">
       <h2>🎯 Goal</h2>
       <p>
-        To create simple, transparent and accessible digital tools
-        for citizens and public use.
+        To build simple, transparent and accessible digital tools
+        that help people in everyday life.
       </p>
     </div>
 
@@ -228,7 +248,8 @@ footer{
 </div>
 
 <script>
-const ACCESS_CODE = "****";
+/* ACCESS CODE */
+const ACCESS_CODE = "6521";
 
 function unlock(){
   const val = document.getElementById("codeInput").value;
