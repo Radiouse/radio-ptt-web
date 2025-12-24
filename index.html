@@ -2,104 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Daily Mandi Prices | Government of India</title>
+<title>Real-time Air Quality Index | Govt Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+/* ================= BASE THEME ================= */
 :root{
-  --bg:#f2f6fa;
+  --bg:#eef3f9;
   --card:#ffffff;
   --text:#1f2937;
-  --blue:#002147;
-  --border:#cfd8e3;
-}
-.dark{
-  --bg:#0f172a;
-  --card:#111827;
-  --text:#e5e7eb;
-  --blue:#2563eb;
-  --border:#374151;
+  --blue:#0b5ed7;
 }
 body{
   margin:0;
   font-family:Segoe UI,Arial,sans-serif;
-  background:var(--bg);
+  background:linear-gradient(135deg,#e8eef7,#f7faff);
   color:var(--text);
 }
-.nic-top{
-  background:#000;
-  color:#fff;
-  font-size:12px;
-  padding:6px 14px;
-}
+
+/* ================= HEADER ================= */
 header{
-  background:linear-gradient(90deg,#001a33,#002147);
+  background:linear-gradient(90deg,#0b3c6d,#0b5ed7);
   color:#fff;
-  padding:16px;
+  padding:18px;
+  box-shadow:0 6px 20px rgba(0,0,0,.3);
 }
 header h1{margin:0;font-size:22px}
-header p{margin:4px 0 0;font-size:13px;opacity:.9}
+header p{margin:4px 0 0;font-size:13px}
 
-.container{
-  max-width:1400px;
-  margin:auto;
-  padding:16px;
-}
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:14px;
-  margin-bottom:14px;
-}
-button,select,input{
-  padding:8px 10px;
-  margin:4px;
-  border:1px solid var(--border);
-  border-radius:4px;
-}
-button{
-  background:var(--blue);
-  color:#fff;
-  cursor:pointer;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:13px;
-}
-th,td{
-  border:1px solid var(--border);
-  padding:6px;
-  white-space:nowrap;
-}
-th{background:#e6effa}
-.dark th{background:#1f2937}
-
-/* GLOBAL ERROR BAR */
+/* ================= ERROR BAR ================= */
 #globalError{
   display:none;
   background:#b91c1c;
   color:#fff;
-  padding:10px 14px;
-  font-size:13px;
+  padding:10px;
   text-align:center;
+  font-size:13px;
+  animation: slideDown .35s ease both;
 }
 
+/* ================= LAYOUT ================= */
+.container{max-width:1400px;margin:auto;padding:16px}
+
+/* ================= 3D CARD ================= */
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:16px;
+  box-shadow:0 10px 25px rgba(0,0,0,.18);
+  animation: slideUpFade .55s ease both;
+}
+
+/* ================= CONTROLS ================= */
+select,button{
+  padding:10px 12px;
+  margin:4px;
+  border-radius:10px;
+  border:1px solid #d1d5db;
+}
+button{
+  background:linear-gradient(145deg,#0b5ed7,#084298);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+}
+.btn-pulse{animation:pulse 1.6s infinite}
+
+/* ================= TABLE ================= */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid #e5e7eb}
+th{background:#f1f5f9}
+
+/* AQI COLORS */
+.good{color:#15803d;font-weight:600}
+.moderate{color:#b45309;font-weight:600}
+.poor{color:#b91c1c;font-weight:600}
+
+/* ================= FOOTER ================= */
 footer{
   background:#f8fafc;
-  border-top:2px solid #002147;
-  padding:12px;
+  border-top:2px solid #0b5ed7;
+  padding:14px;
   text-align:center;
   font-size:12px;
-  color:#374151;
 }
-.dark footer{
-  background:#020617;
-  color:#cbd5f5;
+
+/* ================= ANIMATIONS ================= */
+@keyframes slideUpFade{
+  from{opacity:0;transform:translateY(24px) scale(.96)}
+  to{opacity:1;transform:none}
 }
+@keyframes scaleIn{
+  from{opacity:0;transform:scale(.9)}
+  to{opacity:1;transform:scale(1)}
+}
+@keyframes slideDown{
+  from{transform:translateY(-120%)}
+  to{transform:translateY(0)}
+}
+@keyframes shimmer{
+  0%{background-position:-200% 0}
+  100%{background-position:200% 0}
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(11,94,215,.45)}
+  70%{box-shadow:0 0 0 18px rgba(11,94,215,0)}
+  100%{box-shadow:0 0 0 0 rgba(11,94,215,0)}
+}
+
+.loading{position:relative;overflow:hidden}
+.loading::after{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(110deg,
+    rgba(255,255,255,0) 40%,
+    rgba(255,255,255,.35) 50%,
+    rgba(255,255,255,0) 60%);
+  background-size:200% 100%;
+  animation:shimmer 1.2s linear infinite;
+}
+
+tr.reveal{animation:slideUpFade .35s ease both}
+.aqi-count{font-weight:600}
+canvas{animation:scaleIn .45s ease both}
 </style>
 </head>
 
@@ -107,44 +135,34 @@ footer{
 
 <div id="globalError">⚠️ System Error</div>
 
-<div class="nic-top">
-  Government of India | Ministry of Agriculture & Farmers Welfare
-</div>
-
 <header>
-  <h1>Daily Market (Mandi) Prices</h1>
+  <h1>Real-time Air Quality Index (AQI)</h1>
   <p>Open Government Data Platform India (NIC)</p>
 </header>
 
 <div class="container">
 
 <div class="card">
-  <button onclick="loadData()">Load / Refresh Data</button>
-  <button onclick="toggleDark()">🌙 Dark</button>
-  <button onclick="downloadCSV()">⬇ CSV</button><br>
-
-  <select id="stateFilter"></select>
-  <select id="districtFilter"></select>
-
-  <input type="date" id="dateFilter">
-  <input type="text" id="search" placeholder="Search mandi / commodity">
-
-  <div id="lastUpdated" style="margin-top:6px;font-size:13px;">Last Updated: —</div>
-  <div id="status" style="margin-top:4px;">Idle</div>
+  <button id="loadBtn" class="btn-pulse" onclick="loadData()">Load AQI Data</button>
+  <select id="cityFilter"></select>
+  <select id="stationFilter"></select>
+  <span id="status">Idle</span>
 </div>
 
 <div class="card">
-  <h3>📊 Commodity-wise Comparison</h3>
-  <canvas id="commodityChart"></canvas>
-</div>
-
-<div class="card">
-  <h3>📅 Last 30 Days Price Trend</h3>
-  <canvas id="trendChart"></canvas>
+  <h3>📊 Average AQI by City</h3>
+  <canvas id="aqiChart" height="220"></canvas>
 </div>
 
 <div class="card" style="overflow-x:auto">
   <table id="table"></table>
+</div>
+
+<!-- DATA.GOV WIDGET -->
+<div class="widget" style="text-align:center;margin-top:20px;">
+  <a href="https://data.gov.in/catalogs/?ministry=Ministry of Personnel, Public Grievances and Pensions" target="_blank">
+    <img src="https://data.gov.in/files/ogdpv2cms/s3fs-public/link_to_us/banner391x67.jpg">
+  </a>
 </div>
 
 </div>
@@ -158,191 +176,142 @@ footer{
 
 <script>
 /* ================= CONFIG ================= */
-const API_KEY = "579b464db66ec23bdd000001dd4bec4f88d44e427141d80a8f9a5fcc";
-const RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070";
+const API_KEY="579b464db66ec23bdd000001dd4bec4f88d44e427141d80a8f9a5fcc";
+const RESOURCE_ID="3b01bcb8-0b14-4abf-b6f2-2c5c4c09f7b0";
+const DEFAULT_STATE="Delhi";
 
-/* ================= STATE ================= */
-let allData = [];
-let commodityChart = null;
-let trendChart = null;
+let allData=[], chart=null;
 
-/* ================= ERROR SYSTEM ================= */
+/* ================= ERROR ================= */
 function showError(msg){
-  const box = document.getElementById("globalError");
-  box.innerText = "⚠️ " + msg;
-  box.style.display = "block";
-  setTimeout(()=>box.style.display="none",15000);
+  globalError.innerText="⚠️ "+msg;
+  globalError.style.display="block";
+  setTimeout(()=>globalError.style.display="none",15000);
 }
-window.onerror = () => { showError("Unexpected system error occurred."); return true; };
-window.addEventListener("unhandledrejection",()=>showError("Network or API error."));
+window.onerror=()=>{showError("Unexpected system error");return true};
+window.addEventListener("unhandledrejection",()=>showError("Network / API error"));
 
-/* ================= HELPERS ================= */
-function getISTTime(){
-  return new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"});
-}
-function updateLastUpdated(){
-  const t = getISTTime();
-  localStorage.setItem("mandi_last_updated",t);
-  lastUpdated.innerText = "Last Updated: " + t + " (IST)";
-}
-(function(){
-  const t = localStorage.getItem("mandi_last_updated");
-  if(t) lastUpdated.innerText = "Last Updated: " + t + " (IST)";
-})();
-
-function normalize(r){
-  return {
-    state: r.state || r.State || "",
-    district: r.district || r.District || "",
-    market: r.market || r.Market || "",
-    commodity: r.commodity || r.Commodity || "",
-    arrival_date: r.arrival_date || r.Arrival_Date || "",
-    modal_price: r.modal_price || r.Modal_Price || "0"
-  };
+/* ================= LOADING ================= */
+function setLoading(on){
+  document.querySelectorAll('.card')
+    .forEach(c=>on?c.classList.add('loading'):c.classList.remove('loading'));
+  loadBtn.classList.toggle('btn-pulse',on);
 }
 
-/* ================= LOAD DATA (JSON SAFE) ================= */
+/* ================= LOAD DATA ================= */
 async function loadData(){
-  status.innerText="Loading data...";
+  status.innerText="Loading AQI data...";
+  setLoading(true);
   try{
-    const res = await fetch(
-      `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&limit=500`
-    );
+    const url=`https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&limit=500&filters[state]=${DEFAULT_STATE}`;
+    const res=await fetch(url);
     if(!res.ok) throw "API error";
-    const json = await res.json();
-    if(!json.records || !json.records.length){
-      status.innerText="No data received";
+    const json=await res.json();
+    if(!json.records||!json.records.length){
+      status.innerText="No AQI data";
+      setLoading(false);
       return;
     }
-    allData = json.records.map(normalize);
-    buildStateDistrict();
+
+    allData=json.records.map(r=>({
+      city:r.city||"",
+      station:r.station||"",
+      aqi:parseFloat(r.pollutant_avg||0)
+    }));
+
+    buildFilters();
     applyFilters();
-    updateLastUpdated();
-    status.innerText = `Loaded ${allData.length} records`;
+    status.innerText=`Loaded ${allData.length} records`;
+    setLoading(false);
+
   }catch{
     status.innerText="Failed to load data";
-    showError("Data service temporarily unavailable.");
+    setLoading(false);
+    showError("AQI service temporarily unavailable");
   }
 }
 
 /* ================= FILTERS ================= */
-function buildStateDistrict(){
-  stateFilter.innerHTML='<option value="">All States</option>';
-  districtFilter.innerHTML='<option value="">All Districts</option>';
+function buildFilters(){
+  cityFilter.innerHTML='<option value="">All Cities</option>';
+  stationFilter.innerHTML='<option value="">All Stations</option>';
 
-  [...new Set(allData.map(r=>r.state).filter(Boolean))]
-    .sort().forEach(s=>stateFilter.innerHTML+=`<option>${s}</option>`);
+  [...new Set(allData.map(d=>d.city).filter(Boolean))]
+    .forEach(c=>cityFilter.innerHTML+=`<option>${c}</option>`);
 
-  stateFilter.onchange = ()=>{
-    districtFilter.innerHTML='<option value="">All Districts</option>';
-    [...new Set(allData.filter(r=>r.state===stateFilter.value)
-      .map(r=>r.district).filter(Boolean))]
-      .sort().forEach(d=>districtFilter.innerHTML+=`<option>${d}</option>`);
+  cityFilter.onchange=()=>{
+    stationFilter.innerHTML='<option value="">All Stations</option>';
+    [...new Set(allData.filter(d=>d.city===cityFilter.value).map(d=>d.station).filter(Boolean))]
+      .forEach(s=>stationFilter.innerHTML+=`<option>${s}</option>`);
     applyFilters();
   };
-  districtFilter.onchange = applyFilters;
-  search.onkeyup = applyFilters;
-  dateFilter.onchange = applyFilters;
+  stationFilter.onchange=applyFilters;
 }
 
 /* ================= APPLY FILTER ================= */
 function applyFilters(){
-  const s=stateFilter.value, d=districtFilter.value;
-  const q=search.value.toLowerCase(), date=dateFilter.value;
-
-  const f = allData.filter(r=>{
-    if(s && r.state!==s) return false;
-    if(d && r.district!==d) return false;
-    if(date && !r.arrival_date.includes(date)) return false;
-    if(q && !(r.market+r.commodity).toLowerCase().includes(q)) return false;
+  const c=cityFilter.value,s=stationFilter.value;
+  const f=allData.filter(d=>{
+    if(c&&d.city!==c) return false;
+    if(s&&d.station!==s) return false;
     return true;
   });
-
   buildTable(f);
-  buildCommodityChart(f);
-  buildTrendChart(f);
+  buildChart(f);
 }
 
-/* ================= TABLE ================= */
+/* ================= TABLE + COUNT-UP ================= */
+function animateCount(el,to){
+  let cur=0,step=Math.ceil(to/40);
+  (function run(){
+    cur+=step;
+    if(cur>=to){el.textContent=to;return;}
+    el.textContent=cur;
+    requestAnimationFrame(run);
+  })();
+}
+
 function buildTable(data){
   if(!data.length){table.innerHTML="";return;}
-  let html="<tr>";
-  Object.keys(data[0]).forEach(k=>html+=`<th>${k}</th>`);
-  html+="</tr>";
-  data.forEach(r=>{
-    html+="<tr>";
-    Object.values(r).forEach(v=>html+=`<td>${v}</td>`);
-    html+="</tr>";
+  let html="<tr><th>State</th><th>City</th><th>Station</th><th>AQI</th></tr>";
+  data.forEach((d,i)=>{
+    let cls=d.aqi<=50?"good":d.aqi<=100?"moderate":"poor";
+    html+=`<tr class="reveal" style="animation-delay:${i*40}ms">
+      <td>${DEFAULT_STATE}</td>
+      <td>${d.city}</td>
+      <td>${d.station}</td>
+      <td class="${cls} aqi-count" data-aqi="${d.aqi}">0</td>
+    </tr>`;
   });
   table.innerHTML=html;
+  table.querySelectorAll('.aqi-count').forEach(el=>{
+    animateCount(el,parseInt(el.dataset.aqi,10)||0);
+  });
 }
 
-/* ================= CHARTS ================= */
-function buildCommodityChart(data){
-  if(commodityChart) commodityChart.destroy();
+/* ================= CHART ================= */
+function buildChart(data){
+  if(chart) chart.destroy();
   if(!data.length) return;
 
   const map={};
-  data.forEach(r=>{
-    const p=parseFloat(r.modal_price||0);
-    if(!isNaN(p)) (map[r.commodity]??=[]).push(p);
-  });
-
+  data.forEach(d=>(map[d.city]??=[]).push(d.aqi));
   const labels=Object.keys(map).slice(0,8);
   const values=labels.map(k=>{
-    const a=map[k]; return (a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
+    const a=map[k];return (a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
   });
 
-  commodityChart=new Chart(commodityChart,{
-    type:"bar",
-    data:{labels,datasets:[{label:"Avg Price",data:values,backgroundColor:"#002147"}]}
-  });
+  setTimeout(()=>{
+    chart=new Chart(aqiChart,{
+      type:"bar",
+      data:{labels,datasets:[{label:"Average AQI",data:values,backgroundColor:"#0b5ed7"}]},
+      options:{animation:{duration:600,easing:"easeOutQuart"}}
+    });
+  },120);
 }
 
-function buildTrendChart(data){
-  if(trendChart) trendChart.destroy();
-  if(!data.length) return;
-
-  const byDate={};
-  data.forEach(r=>{
-    const p=parseFloat(r.modal_price||0);
-    if(r.arrival_date && !isNaN(p))
-      (byDate[r.arrival_date]??=[]).push(p);
-  });
-
-  const dates=Object.keys(byDate).slice(-30);
-  const values=dates.map(d=>{
-    const a=byDate[d]; return (a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
-  });
-
-  trendChart=new Chart(trendChart,{
-    type:"line",
-    data:{labels:dates,
-      datasets:[{label:"Avg Modal Price",data:values,borderColor:"#002147",tension:.3}]}
-  });
-}
-
-/* ================= EXPORT & UI ================= */
-function downloadCSV(){
-  if(!allData.length) return;
-  let csv=Object.keys(allData[0]).join(",")+"\n";
-  allData.forEach(r=>csv+=Object.values(r).join(",")+"\n");
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv]));
-  a.download="mandi_prices.csv";
-  a.click();
-}
-function toggleDark(){document.body.classList.toggle("dark");}
-
-/* ================= AUTO DAILY REFRESH ================= */
-(function(){
-  const k="mandi_daily_refresh";
-  const t=new Date().toISOString().slice(0,10);
-  if(localStorage.getItem(k)!==t){
-    localStorage.setItem(k,t);
-    setTimeout(loadData,1500);
-  }
-})();
+/* AUTO LOAD */
+window.addEventListener("load",loadData);
 </script>
 
 </body>
