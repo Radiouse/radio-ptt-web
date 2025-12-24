@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GPS Web Camera</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI,Arial;
+  background:#020617;
+  color:#fff;
+  text-align:center;
+}
+header{
+  padding:14px;
+  background:linear-gradient(90deg,#0b5ed7,#1d4ed8);
+}
+video,canvas{
+  width:95%;
+  max-width:480px;
+  border-radius:16px;
+  margin-top:12px;
+  box-shadow:0 20px 40px rgba(0,0,0,.6);
+}
+.controls{
+  margin:16px;
+}
+button{
+  padding:12px 18px;
+  margin:6px;
+  border:none;
+  border-radius:14px;
+  background:#16a34a;
+  color:#fff;
+  font-size:16px;
+}
+#downloadBtn{
+  display:none;
+  background:#0b5ed7;
+}
+#error{
+  display:none;
+  background:#b91c1c;
+  padding:10px;
+  margin:10px;
+  border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h2>📸 GPS Web Camera</h2>
+  <p>Location • Address • Time Auto Capture</p>
+</header>
+
+<div id="error"></div>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" style="display:none"></canvas>
+
+<div class="controls">
+  <button onclick="capturePhoto()">📷 Capture Photo</button>
+  <button id="downloadBtn" onclick="downloadPhoto()">⬇️ Download Photo</button>
+</div>
+
+<script>
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const errorBox = document.getElementById("error");
+const downloadBtn = document.getElementById("downloadBtn");
+
+let currentLocation = null;
+let currentAddress = null;
+
+/* ---------- ERROR ---------- */
+function showError(msg){
+  errorBox.innerText = "⚠️ " + msg;
+  errorBox.style.display = "block";
+}
+
+/* ---------- CAMERA ---------- */
+navigator.mediaDevices.getUserMedia({
+  video:{ facingMode:{ ideal:"environment" } }
+})
+.then(stream=>{
+  video.srcObject = stream;
+})
+.catch(()=>{
+  showError("Camera permission denied");
+});
+
+/* ---------- LOCATION ---------- */
+navigator.geolocation.getCurrentPosition(
+  pos=>{
+    currentLocation = pos.coords;
+    fetchAddress(pos.coords.latitude, pos.coords.longitude);
+  },
+  ()=>{
+    showError("Location permission denied");
+  },
+  { enableHighAccuracy:true }
+);
+
+/* ---------- ADDRESS FETCH ---------- */
+async function fetchAddress(lat, lon){
+  try{
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+      { headers:{ "User-Agent":"GPS-Web-Camera" } }
+    );
+    const data = await res.json();
+    currentAddress = data.address;
+  }catch{
+    currentAddress = null;
+  }
+}
+
+/* ---------- CAPTURE ---------- */
+function capturePhoto(){
+  errorBox.style.display="none";
+  downloadBtn.style.display="none";
+
+  if(!currentLocation){
+    showError("Location not ready");
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video,0,0);
+
+  /* Overlay background */
+  ctx.fillStyle = "rgba(0,0,0,0.65)";
+  ctx.fillRect(0, canvas.height-200, canvas.width, 200);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "16px Arial";
+
+  const lat = currentLocation.latitude.toFixed(6);
+  const lon = currentLocation.longitude.toFixed(6);
+  const now = new Date().toLocaleString();
+
+  const village =
+    currentAddress?.village ||
+    currentAddress?.suburb ||
+    currentAddress?.town ||
+    currentAddress?.city ||
+    "NA";
+
+  const district =
+    currentAddress?.county ||
+    currentAddress?.district ||
+    "NA";
+
+  const state = currentAddress?.state || "NA";
+  const pin = currentAddress?.postcode || "NA";
+  const country = currentAddress?.country || "India";
+
+  let y = canvas.height - 160;
+  ctx.fillText(`📍 ${village}, ${district}`, 10, y); y+=24;
+  ctx.fillText(`🏛 ${state} - ${pin}`, 10, y); y+=24;
+  ctx.fillText(`🌐 ${country}`, 10, y); y+=24;
+  ctx.fillText(`📌 Lat ${lat}, Long ${lon}`, 10, y); y+=24;
+  ctx.fillText(`🕒 ${now}`, 10, y); y+=24;
+  ctx.fillText(`📷 GPS Web Camera`, 10, y);
+
+  canvas.style.display="block";
+  downloadBtn.style.display="inline-block";
+}
+
+/* ---------- DOWNLOAD ---------- */
+function downloadPhoto(){
+  const link = document.createElement("a");
+  const ts = new Date().toISOString().replace(/[:.]/g,"-");
+  link.download = `GPS_Photo_${ts}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+</script>
+
+</body>
+</html>
