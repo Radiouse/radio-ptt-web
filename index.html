@@ -2,170 +2,196 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>User Info Capture</title>
+<title>Property Card Distribution | Govt Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Leaflet Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <style>
+:root{
+  --bg:#f4f6f9;
+  --card:#fff;
+  --text:#222;
+  --blue:#0b5ed7;
+}
+.dark{
+  --bg:#121212;
+  --card:#1e1e1e;
+  --text:#eee;
+  --blue:#4dabf7;
+}
 body{
-  font-family:Arial, sans-serif;
-  background:#eef2f7;
-  padding:20px;
+  margin:0;
+  font-family:system-ui,Arial;
+  background:var(--bg);
+  color:var(--text);
 }
-.box{
-  max-width:430px;
-  margin:auto;
-  background:#fff;
-  padding:20px;
-  border-radius:12px;
-  box-shadow:0 4px 12px rgba(0,0,0,.1);
-}
-h2{text-align:center}
-input,button{
-  width:100%;
-  padding:12px;
-  margin:8px 0;
-  border-radius:8px;
-  border:1px solid #ccc;
-  font-size:15px;
-}
-button{
-  background:#0088cc;
+header{
+  background:var(--blue);
   color:#fff;
-  border:none;
-  cursor:pointer;
-}
-#status{
-  font-size:14px;
+  padding:14px;
   text-align:center;
-  margin-top:6px;
 }
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:15px;
+}
+.card{
+  background:var(--card);
+  padding:15px;
+  border-radius:8px;
+  margin-bottom:15px;
+}
+button,select{
+  padding:8px 12px;
+  margin:4px;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+th,td{
+  border:1px solid #ccc;
+  padding:6px;
+  white-space:nowrap;
+}
+th{background:#eef3fb}
+.dark th{background:#2a2a2a}
+
+#map{height:300px}
 </style>
 </head>
 
 <body>
-<div class="box">
-<h2>User Verification</h2>
 
-<input id="name" placeholder="Full Name">
-<input id="phone" placeholder="Phone Number">
+<header>
+  <h2>Property Card Distribution</h2>
+  <p>SVAMITVA | Open Govt Data</p>
+</header>
 
-<button onclick="getGPS()">📍 Capture Location</button>
-<div id="status">Location not captured</div>
+<div class="container">
 
-<button onclick="submitData()">Submit</button>
+<div class="card">
+  <button onclick="loadData()">Load Data</button>
+  <button onclick="toggleDark()">🌙 Dark Mode</button>
+  <button onclick="downloadCSV()">⬇ CSV</button>
+</div>
+
+<div class="card">
+  <select id="stateFilter" onchange="applyFilter()">
+    <option value="">All States</option>
+  </select>
+  <select id="districtFilter" onchange="applyFilter()">
+    <option value="">All Districts</option>
+  </select>
+</div>
+
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
+
+<div class="card">
+  <div id="map"></div>
+</div>
+
+<div class="card">
+  <div style="overflow-x:auto">
+    <table id="table"></table>
+  </div>
+</div>
+
 </div>
 
 <script>
-const statusEl = document.getElementById("status");
-let gpsLat=null, gpsLng=null, accuracy=null;
-let fullAddress="Not Available";
+const API_KEY="579b464db66ec23bdd000001dd4bec4f88d44e427141d80a8f9a5fcc";
+const RESOURCE_ID="f978ad28-9827-4afe-8484-17133f736af7";
 
-/* Reverse geocoding */
-async function reverseGeocode(lat,lng){
-  try{
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-      {
-        headers:{
-          "User-Agent":"LocationCaptureDemo/1.0"
-        }
-      }
-    );
-    const data = await res.json();
-    fullAddress = data.display_name || "Address not found";
-  }catch(e){
-    fullAddress = "Address fetch failed";
-  }
+let records=[], map, chart;
+
+async function loadData(){
+  const res = await fetch(`https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&limit=100`);
+  const json = await res.json();
+  records = json.records || [];
+  buildTable(records);
+  buildFilters(records);
+  buildChart(records);
+  buildMap(records);
 }
 
-/* Capture GPS */
-function getGPS(){
-  if(!navigator.geolocation){
-    statusEl.innerHTML = "Geolocation not supported ❌";
-    return;
-  }
-
-  statusEl.innerHTML = "Capturing location…";
-
-  navigator.geolocation.getCurrentPosition(
-    async pos=>{
-      gpsLat = pos.coords.latitude;
-      gpsLng = pos.coords.longitude;
-      accuracy = Math.round(pos.coords.accuracy);
-
-      await reverseGeocode(gpsLat, gpsLng);
-
-      statusEl.innerHTML =
-        "📍 Location captured ✔️<br>Accuracy: "+accuracy+" m";
-    },
-    err=>{
-      statusEl.innerHTML = "Location permission denied ❌";
-    },
-    {
-      enableHighAccuracy:true,
-      timeout:15000,
-      maximumAge:0
-    }
-  );
+function buildTable(data){
+  if(!data.length) return;
+  let html="<tr>";
+  Object.keys(data[0]).forEach(k=>html+=`<th>${k}</th>`);
+  html+="</tr>";
+  data.forEach(r=>{
+    html+="<tr>";
+    Object.values(r).forEach(v=>html+=`<td>${v}</td>`);
+    html+="</tr>";
+  });
+  table.innerHTML=html;
 }
 
-/* Submit */
-function submitData(){
+function buildFilters(data){
+  let states=[...new Set(data.map(r=>r.state||r.State))];
+  stateFilter.innerHTML='<option value="">All States</option>';
+  states.forEach(s=>stateFilter.innerHTML+=`<option>${s}</option>`);
+}
 
-  const name = document.getElementById("name").value.trim();
-  const phone = document.getElementById("phone").value.trim();
+function applyFilter(){
+  let s=stateFilter.value.toLowerCase();
+  let d=districtFilter.value.toLowerCase();
+  let f=records.filter(r=>{
+    let st=(r.state||r.State||"").toLowerCase();
+    let di=(r.district||r.District||"").toLowerCase();
+    return (!s||st===s)&&(!d||di===d);
+  });
+  buildTable(f);
+}
 
-  if(!name || !phone){
-    alert("Name & Phone required");
-    return;
-  }
-
-  if(gpsLat === null){
-    alert("Please capture location first");
-    return;
-  }
-
-  // 🔴 PASTE YOUR TOKEN
-  const BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
-  const CHAT_ID = "543961277";
-
-  const mapLink = `https://www.google.com/maps?q=${gpsLat},${gpsLng}`;
-  const time = new Date().toLocaleString("en-IN");
-
-  const message =
-`📩 NEW USER SUBMISSION
-
-👤 Name: ${name}
-📞 Phone: ${phone}
-
-📍 Location:
-Lat: ${gpsLat}
-Lng: ${gpsLng}
-Accuracy: ${accuracy} m
-
-🏠 Address:
-${fullAddress}
-
-🗺 Map:
-${mapLink}
-
-⏰ Time:
-${time}`;
-
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({
-      chat_id:CHAT_ID,
-      text:message
-    })
-  })
-  .then(()=>{
-    alert("Data sent ✅");
-  })
-  .catch(()=>{
-    alert("send failed ❌");
+function buildChart(data){
+  let count={};
+  data.forEach(r=>{
+    let s=r.state||r.State||"Unknown";
+    count[s]=(count[s]||0)+1;
+  });
+  if(chart) chart.destroy();
+  chart=new Chart(document.getElementById("chart"),{
+    type:"bar",
+    data:{labels:Object.keys(count),
+      datasets:[{label:"Records",data:Object.values(count)}]}
   });
 }
+
+function buildMap(data){
+  if(!map){
+    map=L.map("map").setView([22,78],5);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+  }
+}
+
+function downloadCSV(){
+  let csv="";
+  records.forEach((r,i)=>{
+    if(i===0) csv+=Object.keys(r).join(",")+"\n";
+    csv+=Object.values(r).join(",")+"\n";
+  });
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv]));
+  a.download="property_card.csv";
+  a.click();
+}
+
+function toggleDark(){
+  document.body.classList.toggle("dark");
+}
 </script>
+
 </body>
 </html>
