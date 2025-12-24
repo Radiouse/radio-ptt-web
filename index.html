@@ -2,63 +2,78 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Home | Public Utility Dashboard</title>
+<title>Public Utility Dashboard | Rankaj Kumar</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* ---------- BASE ---------- */
+/* ===== BASE ===== */
 body{
   margin:0;
   font-family:Segoe UI,Arial;
   background:
-    radial-gradient(circle at top,#0b5ed7,#020617 60%);
+    radial-gradient(circle at top,#0b5ed7 0%,#020617 65%);
   min-height:100vh;
   color:#fff;
   display:flex;
+  flex-direction:column;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
 }
 
-/* ---------- GRID ---------- */
+/* ===== HEADER ===== */
+.header{
+  text-align:center;
+  margin-bottom:36px;
+}
+.header h1{
+  margin:0;
+  font-size:32px;
+  letter-spacing:.5px;
+}
+.header p{
+  margin-top:8px;
+  font-size:14px;
+  opacity:.85;
+}
+
+/* ===== GRID ===== */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:24px;
+  gap:30px;
   max-width:900px;
   width:90%;
-  animation: pageFade .8s ease forwards;
 }
 
-/* ---------- CARD ---------- */
+/* ===== CARD ===== */
 .card{
   background:rgba(255,255,255,.08);
   backdrop-filter: blur(16px);
   border-radius:22px;
-  padding:28px;
+  padding:32px;
   text-align:center;
   box-shadow:0 30px 60px rgba(0,0,0,.6);
-  transform: translateY(40px) scale(.95);
-  opacity:0;
-  animation: cardIn .8s ease forwards;
+  transition:.35s ease;
 }
-.card:nth-child(1){animation-delay:.2s}
-.card:nth-child(2){animation-delay:.4s}
-
 .card:hover{
-  transform: translateY(-6px) scale(1.02);
+  transform:translateY(-6px);
   box-shadow:0 40px 80px rgba(0,0,0,.7);
 }
+.card h2{
+  margin:10px 0;
+  font-size:21px;
+}
+.card p{
+  font-size:14px;
+  opacity:.85;
+  line-height:1.5;
+}
 
-/* ---------- TEXT ---------- */
-.card h2{margin:10px 0}
-.card p{opacity:.8;font-size:14px}
-
-/* ---------- BUTTON ---------- */
+/* ===== BUTTON ===== */
 .card a{
   display:inline-block;
-  margin-top:18px;
-  padding:12px 24px;
+  margin-top:22px;
+  padding:12px 28px;
   background:#0b5ed7;
   color:#fff;
   text-decoration:none;
@@ -71,46 +86,57 @@ body{
   box-shadow:0 0 0 6px rgba(37,99,235,.25);
 }
 
-/* ---------- FOOTER ---------- */
+/* ===== FOOTER ===== */
 footer{
-  position:fixed;
-  bottom:12px;
+  margin-top:48px;
   font-size:12px;
-  opacity:.6;
-}
-
-/* ---------- KEYFRAMES ---------- */
-@keyframes cardIn{
-  to{
-    transform: translateY(0) scale(1);
-    opacity:1;
-  }
-}
-@keyframes pageFade{
-  from{opacity:0}
-  to{opacity:1}
+  opacity:.65;
+  text-align:center;
 }
 </style>
 </head>
 
 <body>
 
+<!-- ===== TITLE ===== -->
+<div class="header">
+  <h1>🇮🇳 Public Utility Dashboard</h1>
+  <p>Citizen services & location-based web tools</p>
+</div>
+
+<!-- ===== MAIN DASHBOARD ===== -->
 <div class="grid">
 
   <div class="card">
     <h2>📸 GPS Web Camera</h2>
-    <p>Capture photo with location & time</p>
+    <p>
+      Capture photos with live location, address,
+      date and time overlay.
+    </p>
     <a href="cam.html">Open Camera</a>
   </div>
 
   <div class="card">
     <h2>📮 PIN & IFSC Finder</h2>
-    <p>Location-based public utility</p>
+    <p>
+      Find post office, bank branches,
+      IFSC codes and nearby services.
+    </p>
     <a href="finder.html">Open Finder</a>
+  </div>
+
+  <div class="card">
+    <h2>👤 About</h2>
+    <p>
+      Developer profile and project
+      information.
+    </p>
+    <a href="about.html">View About</a>
   </div>
 
 </div>
 
+<!-- ===== FOOTER ===== -->
 <footer>
   Designed & Developed by <strong>Rankaj Kumar</strong>
 </footer>
