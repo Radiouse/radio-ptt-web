@@ -5,24 +5,33 @@
 <title>PIN & IFSC Finder | Govt Style</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Leaflet Map -->
+<!-- Leaflet -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <style>
 :root{
-  --bg:#eef3f9; --card:#fff; --text:#1f2937; --blue:#0b5ed7;
+  --bg:#eef3f9;
+  --card:#ffffff;
+  --text:#1f2937;
+  --blue:#0b5ed7;
 }
 body{
-  margin:0; font-family:Segoe UI,Arial;
+  margin:0;
+  font-family:Segoe UI,Arial,sans-serif;
   background:linear-gradient(135deg,#e8eef7,#f7faff);
   color:var(--text);
 }
 header{
   background:linear-gradient(90deg,#0b3c6d,#0b5ed7);
-  color:#fff; padding:18px;
+  color:#fff;
+  padding:18px;
 }
-.container{max-width:1200px;margin:auto;padding:16px}
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:16px;
+}
 .card{
   background:var(--card);
   border-radius:14px;
@@ -31,23 +40,52 @@ header{
   box-shadow:0 10px 25px rgba(0,0,0,.18);
 }
 input,button{
-  padding:10px 12px;margin:4px;
-  border-radius:10px;border:1px solid #d1d5db;
+  padding:10px 12px;
+  margin:4px;
+  border-radius:10px;
+  border:1px solid #d1d5db;
 }
 button{
-  background:#0b5ed7;color:#fff;border:none;cursor:pointer;
+  background:#0b5ed7;
+  color:#fff;
+  border:none;
+  cursor:pointer;
 }
-#globalError{
-  display:none;background:#b91c1c;color:#fff;
-  padding:10px;text-align:center;
+button:disabled{
+  opacity:.6;
+  cursor:not-allowed;
 }
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:8px;border-bottom:1px solid #e5e7eb}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+th,td{
+  padding:8px;
+  border-bottom:1px solid #e5e7eb;
+}
 th{background:#f1f5f9}
-#map{height:300px;border-radius:12px}
+
+#map{
+  height:300px;
+  border-radius:12px;
+}
+
+#globalError{
+  display:none;
+  background:#b91c1c;
+  color:#fff;
+  padding:10px;
+  text-align:center;
+  font-size:13px;
+}
+
 footer{
-  background:#f8fafc;border-top:2px solid #0b5ed7;
-  padding:14px;text-align:center;font-size:12px;
+  background:#f8fafc;
+  border-top:2px solid #0b5ed7;
+  padding:14px;
+  text-align:center;
+  font-size:12px;
 }
 </style>
 </head>
@@ -58,7 +96,7 @@ footer{
 
 <header>
   <h2>India Post PIN & IFSC Finder</h2>
-  <p>Location-aware Public Utility</p>
+  <p>Location-based Public Utility</p>
 </header>
 
 <div class="container">
@@ -67,10 +105,8 @@ footer{
 <div class="card">
   <h3>📍 Your Location</h3>
   <button onclick="detectLocation()">Use My Location</button>
-  <button onclick="drawRadius(5)">5 km Radius</button>
-  <button onclick="drawRadius(10)">10 km Radius</button>
-  <button onclick="findNearestPIN()">Nearest PIN</button>
-  <button onclick="nearestBank()">Nearest Bank (City)</button>
+  <button onclick="drawRadius(5)">5 km</button>
+  <button onclick="drawRadius(10)">10 km</button>
   <div id="locInfo"></div>
 </div>
 
@@ -80,11 +116,22 @@ footer{
   <div id="map"></div>
 </div>
 
+<!-- BANK / ATM -->
+<div class="card">
+  <h3>🏦 Banks / 🏧 ATMs within Radius</h3>
+
+  <label><input type="checkbox" id="showBanks" checked> Banks</label>
+  &nbsp;&nbsp;
+  <label><input type="checkbox" id="showATMs"> ATMs</label>
+
+  <div id="bankList">No data</div>
+</div>
+
 <!-- PIN SEARCH -->
 <div class="card">
   <h3>📮 PIN Code Details</h3>
   <input id="pinInput" placeholder="6-digit PIN">
-  <button onclick="findPIN()">Search PIN</button>
+  <button onclick="findPIN()">Search</button>
   <div id="pinResult"></div>
 </div>
 
@@ -92,7 +139,7 @@ footer{
 <div class="card">
   <h3>🏦 IFSC Code Details</h3>
   <input id="ifscInput" placeholder="IFSC Code">
-  <button onclick="findIFSC()">Search IFSC</button>
+  <button onclick="findIFSC()">Search</button>
   <div id="ifscResult"></div>
 </div>
 
@@ -104,146 +151,214 @@ footer{
 </footer>
 
 <script>
-/* ===== ERROR ===== */
+/* ================= ERROR ================= */
 function showError(msg){
-  globalError.innerText="⚠️ "+msg;
-  globalError.style.display="block";
+  globalError.innerText = "⚠️ " + msg;
+  globalError.style.display = "block";
 }
-function clearError(){ globalError.style.display="none"; }
+function clearError(){
+  globalError.style.display = "none";
+}
 
-/* ===== MAP INIT ===== */
-const map = L.map('map').setView([22.97,78.65],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-let marker=null, radiusCircle=null;
+/* ================= MAP INIT ================= */
+const map = L.map("map").setView([22.97,78.65],5);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+  attribution:"© OpenStreetMap"
+}).addTo(map);
+
 let userLat=null, userLon=null;
+let userMarker=null, radiusCircle=null;
+let poiMarkers=[];
 
-/* ===== LOCATION ===== */
+/* ================= LOCATION ================= */
 function detectLocation(){
   clearError();
   if(!navigator.geolocation){
     showError("Geolocation not supported");
     return;
   }
+
   navigator.geolocation.getCurrentPosition(
     pos=>{
-      userLat=pos.coords.latitude;
-      userLon=pos.coords.longitude;
-      updateMap(userLat,userLon,"Your Location");
+      userLat = pos.coords.latitude;
+      userLon = pos.coords.longitude;
+
+      if(userMarker) map.removeLayer(userMarker);
+      userMarker = L.marker([userLat,userLon])
+        .addTo(map)
+        .bindPopup("Your Location")
+        .openPopup();
+
+      map.setView([userLat,userLon],12);
       locInfo.innerText =
         `Latitude: ${userLat.toFixed(4)}, Longitude: ${userLon.toFixed(4)}`;
     },
-    err=>{
-      showError("Location permission denied or unavailable");
+    ()=>{
+      showError("Location permission denied");
     },
     {enableHighAccuracy:true,timeout:10000}
   );
 }
 
-/* ===== MAP HELPERS ===== */
-function updateMap(lat,lon,label){
-  if(marker) map.removeLayer(marker);
-  marker=L.marker([lat,lon]).addTo(map).bindPopup(label).openPopup();
-  map.setView([lat,lon],12);
-}
+/* ================= RADIUS ================= */
 function drawRadius(km){
-  if(!userLat||!userLon){
+  if(!userLat || !userLon){
     showError("Detect location first");
     return;
   }
+
   if(radiusCircle) map.removeLayer(radiusCircle);
-  radiusCircle=L.circle([userLat,userLon],{
-    radius:km*1000,
+  radiusCircle = L.circle([userLat,userLon],{
+    radius: km*1000,
     color:"#0b5ed7",
     fillOpacity:0.15
   }).addTo(map);
+
   map.fitBounds(radiusCircle.getBounds());
+  findNearbyPlaces(km);
 }
 
-/* ===== DISTANCE ===== */
-function getDistanceKm(lat1,lon1,lat2,lon2){
+/* ================= DISTANCE ================= */
+function distanceKm(lat1,lon1,lat2,lon2){
   const R=6371;
   const dLat=(lat2-lat1)*Math.PI/180;
   const dLon=(lon2-lon1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2+
-    Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+  const a=
+    Math.sin(dLat/2)**2 +
+    Math.cos(lat1*Math.PI/180) *
+    Math.cos(lat2*Math.PI/180) *
     Math.sin(dLon/2)**2;
   return (R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))).toFixed(2);
 }
 
-/* ===== NEAREST PIN (APPROX) ===== */
-async function findNearestPIN(){
-  if(!userLat||!userLon){
-    showError("Detect location first");
+/* ================= BANK / ATM ================= */
+async function findNearbyPlaces(km){
+  clearError();
+  bankList.innerHTML="Searching…";
+
+  poiMarkers.forEach(m=>map.removeLayer(m));
+  poiMarkers=[];
+
+  const showBank = showBanks.checked;
+  const showATM  = showATMs.checked;
+
+  if(!showBank && !showATM){
+    bankList.innerHTML="Select Bank or ATM";
     return;
   }
-  try{
-    const r=await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}`,
-      {headers:{'User-Agent':'GovtStyleApp'}}
+
+  const radius = km*1000;
+  let parts=[];
+  if(showBank) parts.push(`node["amenity"="bank"]`);
+  if(showATM)  parts.push(`node["amenity"="atm"]`);
+
+  const query = `
+    [out:json];
+    (
+      ${parts.map(p=>`${p}(around:${radius},${userLat},${userLon});`).join("")}
     );
-    const d=await r.json();
-    alert(`📮 Nearest PIN (approx): ${d.address.postcode || "Not available"}`);
+    out body;
+  `;
+
+  try{
+    const res = await fetch(
+      "https://overpass-api.de/api/interpreter",
+      {method:"POST",body:query}
+    );
+    const data = await res.json();
+
+    if(!data.elements || data.elements.length===0){
+      bankList.innerHTML="No places found in this radius.";
+      return;
+    }
+
+    let rows=[];
+    data.elements.forEach(e=>{
+      if(!e.lat || !e.lon) return;
+      rows.push({
+        name: e.tags?.name || (e.tags?.amenity==="atm"?"ATM":"Bank"),
+        type: e.tags?.amenity,
+        lat: e.lat,
+        lon: e.lon,
+        dist: distanceKm(userLat,userLon,e.lat,e.lon)
+      });
+    });
+
+    rows.sort((a,b)=>a.dist-b.dist);
+
+    let html="<table><tr><th>Name</th><th>Type</th><th>Distance (km)</th><th>Navigate</th></tr>";
+    rows.slice(0,25).forEach(r=>{
+      const m=L.marker([r.lat,r.lon])
+        .addTo(map)
+        .bindPopup(`${r.name}<br>${r.dist} km`);
+      poiMarkers.push(m);
+
+      html+=`
+        <tr>
+          <td>${r.name}</td>
+          <td>${r.type.toUpperCase()}</td>
+          <td>${r.dist}</td>
+          <td>
+            <a target="_blank"
+               href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lon}">
+               🧭 Open
+            </a>
+          </td>
+        </tr>`;
+    });
+    html+="</table>";
+    bankList.innerHTML=html;
+
   }catch{
-    showError("Unable to find nearest PIN");
+    showError("Unable to load nearby banks / ATMs");
   }
 }
 
-/* ===== NEAREST BANK (CITY LEVEL) ===== */
-async function nearestBank(){
-  if(!userLat||!userLon){
-    showError("Detect location first");
-    return;
-  }
-  try{
-    const r=await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLat}&lon=${userLon}`,
-      {headers:{'User-Agent':'GovtStyleApp'}}
-    );
-    const d=await r.json();
-    const city=d.address.city||d.address.town||d.address.village||"";
-    alert(`🏦 Nearest bank search area:\nCity: ${city}\nUse IFSC search for branches`);
-  }catch{
-    showError("Unable to detect bank area");
-  }
-}
-
-/* ===== PIN SEARCH ===== */
+/* ================= PIN ================= */
 async function findPIN(){
-  clearError(); pinResult.innerHTML="";
+  clearError();
+  pinResult.innerHTML="";
   const pin=pinInput.value.trim();
-  if(pin.length!==6){ showError("Enter valid PIN"); return; }
+  if(pin.length!==6){
+    showError("Enter valid 6-digit PIN");
+    return;
+  }
   try{
     const r=await fetch(`https://api.postalpincode.in/pincode/${pin}`);
     const d=await r.json();
     if(d[0].Status!=="Success") throw "";
     const p=d[0].PostOffice[0];
     pinResult.innerHTML=`
-    <table>
-      <tr><th>Post Office</th><td>${p.Name}</td></tr>
-      <tr><th>District</th><td>${p.District}</td></tr>
-      <tr><th>State</th><td>${p.State}</td></tr>
-    </table>`;
+      <table>
+        <tr><th>Post Office</th><td>${p.Name}</td></tr>
+        <tr><th>District</th><td>${p.District}</td></tr>
+        <tr><th>State</th><td>${p.State}</td></tr>
+      </table>`;
   }catch{
     showError("PIN not found");
   }
 }
 
-/* ===== IFSC SEARCH ===== */
+/* ================= IFSC ================= */
 async function findIFSC(){
-  clearError(); ifscResult.innerHTML="";
-  const i=ifscInput.value.trim().toUpperCase();
-  if(i.length<8){ showError("Invalid IFSC"); return; }
+  clearError();
+  ifscResult.innerHTML="";
+  const code=ifscInput.value.trim().toUpperCase();
+  if(code.length<8){
+    showError("Invalid IFSC");
+    return;
+  }
   try{
-    const r=await fetch(`https://ifsc.razorpay.com/${i}`);
+    const r=await fetch(`https://ifsc.razorpay.com/${code}`);
     if(!r.ok) throw "";
     const d=await r.json();
     ifscResult.innerHTML=`
-    <table>
-      <tr><th>Bank</th><td>${d.BANK}</td></tr>
-      <tr><th>Branch</th><td>${d.BRANCH}</td></tr>
-      <tr><th>City</th><td>${d.CITY}</td></tr>
-      <tr><th>State</th><td>${d.STATE}</td></tr>
-    </table>`;
+      <table>
+        <tr><th>Bank</th><td>${d.BANK}</td></tr>
+        <tr><th>Branch</th><td>${d.BRANCH}</td></tr>
+        <tr><th>City</th><td>${d.CITY}</td></tr>
+        <tr><th>State</th><td>${d.STATE}</td></tr>
+      </table>`;
   }catch{
     showError("IFSC not found");
   }
