@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Biodata / CV Maker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+@page{ size:A4; margin:15mm }
+
+body{
+  margin:0;
+  font-family:Segoe UI,Arial;
+  background:#e5e7eb;
+}
+body.blue{--head:#eef6ff}
+body.grey{--head:#f3f4f6}
+body.green{--head:#ecfdf5}
+
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:16px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+@media(max-width:900px){.container{grid-template-columns:1fr}}
+
+.form-card{
+  background:#fff;
+  padding:16px;
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(0,0,0,.15);
+}
+input,textarea,select,button{
+  width:100%;
+  padding:8px;
+  margin-bottom:8px;
+}
+button{
+  background:#0b5ed7;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+#cv{
+  background:#fff;
+  padding:14px;
+  border:1px solid #000;
+}
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:var(--head);
+  border:1px solid #000;
+  padding:10px;
+}
+.header img{
+  width:90px;
+  height:120px;
+  object-fit:cover;
+  border:1px solid #000;
+}
+.section{
+  margin-top:10px;
+  border:1px solid #000;
+}
+.section h3{
+  margin:0;
+  padding:6px;
+  background:var(--head);
+  border-bottom:1px solid #000;
+}
+.section p,.section li,.section table{
+  padding:6px;margin:0;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+th,td{
+  border:1px solid #000;
+  padding:6px;
+}
+ul{margin:0;padding-left:18px}
+</style>
+</head>
+
+<body class="blue">
+
+<div class="container">
+
+<!-- FORM -->
+<div class="form-card">
+<h2>📝 Biodata Maker</h2>
+
+<select onchange="changeTheme(this.value)">
+  <option value="blue">Blue Theme</option>
+  <option value="grey">Grey Theme</option>
+  <option value="green">Green Theme</option>
+</select>
+
+<input placeholder="Full Name" oninput="nameOut.innerText=this.value">
+<input placeholder="Address" oninput="addrOut.innerText=this.value">
+<input placeholder="Phone" oninput="phoneOut.innerText=this.value">
+<input placeholder="Email" oninput="emailOut.innerText=this.value">
+
+<textarea placeholder="Objective" oninput="objOut.innerText=this.value"></textarea>
+
+<h3>🎓 Education</h3>
+<input id="deg" placeholder="Degree">
+<input id="inst" placeholder="School / University">
+<input id="grade" placeholder="Grade">
+<input id="year" placeholder="Year">
+<button onclick="addEdu()">➕ Add Education</button>
+
+<textarea placeholder="Experience (one per line)"
+oninput="expOut.innerHTML=this.value.split('\n').map(e=>'<li>'+e+'</li>').join('')"></textarea>
+
+<textarea placeholder="Skills (one per line)"
+oninput="skillOut.innerHTML=this.value.split('\n').map(e=>'<li>'+e+'</li>').join('')"></textarea>
+
+<textarea placeholder="Languages (one per line)"
+oninput="langOut.innerHTML=this.value.split('\n').map(e=>'<li>'+e+'</li>').join('')"></textarea>
+
+<h3>📸 Passport Photo</h3>
+<input type="file" accept="image/*" onchange="loadImage(event)">
+<canvas id="cropCanvas" style="display:none"></canvas>
+
+<button onclick="downloadPDF()">📄 Download PDF</button>
+</div>
+
+<!-- CV PREVIEW -->
+<div id="cv">
+<div class="header">
+  <div>
+    <strong id="nameOut">Your Name</strong><br>
+    <span id="addrOut">Address</span><br>
+    <span id="phoneOut">Phone</span> | <span id="emailOut">Email</span>
+  </div>
+  <img id="photo">
+</div>
+
+<div class="section"><h3>Objective</h3><p id="objOut"></p></div>
+
+<div class="section">
+<h3>Education</h3>
+<table>
+<tr><th>Course</th><th>Institute</th><th>Grade</th><th>Year</th></tr>
+<tbody id="eduTable"></tbody>
+</table>
+</div>
+
+<div class="section"><h3>Experience</h3><ul id="expOut"></ul></div>
+<div class="section"><h3>Skills</h3><ul id="skillOut"></ul></div>
+<div class="section"><h3>Languages</h3><ul id="langOut"></ul></div>
+</div>
+
+</div>
+
+<script>
+function changeTheme(t){document.body.className=t}
+
+function addEdu(){
+  eduTable.innerHTML+=
+  `<tr><td>${deg.value}</td><td>${inst.value}</td><td>${grade.value}</td><td>${year.value}</td></tr>`;
+  deg.value=inst.value=grade.value=year.value="";
+}
+
+function loadImage(e){
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.getElementById("cropCanvas");
+    const ctx=c.getContext("2d");
+    const s=Math.min(img.width,img.height);
+    c.width=300;c.height=400;
+    ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,300,400);
+    photo.src=c.toDataURL("image/jpeg",1);
+  };
+  img.src=URL.createObjectURL(e.target.files[0]);
+}
+
+function downloadPDF(){
+  html2pdf().from(document.getElementById("cv"))
+    .set({filename:"Biodata.pdf"})
+    .save();
+}
+</script>
+
+</body>
+</html>
