@@ -78,6 +78,16 @@ th,td{
 th{background:#e6effa}
 .dark th{background:#1f2937}
 
+/* GLOBAL ERROR BAR */
+#globalError{
+  display:none;
+  background:#b91c1c;
+  color:#fff;
+  padding:10px 14px;
+  font-size:13px;
+  text-align:center;
+}
+
 footer{
   background:#f8fafc;
   border-top:2px solid #002147;
@@ -95,6 +105,8 @@ footer{
 
 <body>
 
+<div id="globalError">⚠️ System Error</div>
+
 <div class="nic-top">
   Government of India | Ministry of Agriculture & Farmers Welfare
 </div>
@@ -111,18 +123,14 @@ footer{
   <button onclick="toggleDark()">🌙 Dark</button>
   <button onclick="downloadCSV()">⬇ CSV</button><br>
 
-  <select id="stateFilter" onchange="applyFiltersSafe()">
-    <option value="">All States</option>
-  </select>
+  <select id="stateFilter"></select>
+  <select id="districtFilter"></select>
 
-  <select id="commodityFilter" onchange="applyFiltersSafe()">
-    <option value="">All Commodities</option>
-  </select>
+  <input type="date" id="dateFilter">
+  <input type="text" id="search" placeholder="Search mandi / commodity">
 
-  <input type="date" id="dateFilter" onchange="applyFiltersSafe()">
-  <input type="text" id="search" placeholder="Search mandi / district" onkeyup="applyFiltersSafe()">
-
-  <div id="status">Idle</div>
+  <div id="lastUpdated" style="margin-top:6px;font-size:13px;">Last Updated: —</div>
+  <div id="status" style="margin-top:4px;">Idle</div>
 </div>
 
 <div class="card">
@@ -142,8 +150,10 @@ footer{
 </div>
 
 <footer>
-  © Government of India | Designed & Developed by NIC  
-  <br>Data Source: data.gov.in
+  <div>Data Source: Open Government Data Platform India (data.gov.in)</div>
+  <div style="margin-top:4px;font-weight:500;">
+    Designed & Developed by <strong>Rankaj Kumar</strong>
+  </div>
 </footer>
 
 <script>
@@ -156,104 +166,106 @@ let allData = [];
 let commodityChart = null;
 let trendChart = null;
 
-/* ================= UTILITIES ================= */
-async function safeFetch(url, timeout = 15000){
-  const controller = new AbortController();
-  setTimeout(() => controller.abort(), timeout);
-  const res = await fetch(url, { signal: controller.signal });
-  if(!res.ok) throw new Error("FETCH_FAILED");
-  return await res.text();
+/* ================= ERROR SYSTEM ================= */
+function showError(msg){
+  const box = document.getElementById("globalError");
+  box.innerText = "⚠️ " + msg;
+  box.style.display = "block";
+  setTimeout(()=>box.style.display="none",15000);
+}
+window.onerror = () => { showError("Unexpected system error occurred."); return true; };
+window.addEventListener("unhandledrejection",()=>showError("Network or API error."));
+
+/* ================= HELPERS ================= */
+function getISTTime(){
+  return new Date().toLocaleString("en-IN",{timeZone:"Asia/Kolkata"});
+}
+function updateLastUpdated(){
+  const t = getISTTime();
+  localStorage.setItem("mandi_last_updated",t);
+  lastUpdated.innerText = "Last Updated: " + t + " (IST)";
+}
+(function(){
+  const t = localStorage.getItem("mandi_last_updated");
+  if(t) lastUpdated.innerText = "Last Updated: " + t + " (IST)";
+})();
+
+function normalize(r){
+  return {
+    state: r.state || r.State || "",
+    district: r.district || r.District || "",
+    market: r.market || r.Market || "",
+    commodity: r.commodity || r.Commodity || "",
+    arrival_date: r.arrival_date || r.Arrival_Date || "",
+    modal_price: r.modal_price || r.Modal_Price || "0"
+  };
 }
 
-function parseXMLSafe(text){
-  try{
-    const xml = new DOMParser().parseFromString(text, "application/xml");
-    if(xml.getElementsByTagName("parsererror").length) return null;
-    return xml;
-  }catch{ return null; }
-}
-
-function destroyChart(c){
-  try{ if(c) c.destroy(); }catch{}
-}
-
-function clearUI(){
-  table.innerHTML = "";
-  destroyChart(commodityChart);
-  destroyChart(trendChart);
-}
-
-/* ================= LOAD DATA ================= */
+/* ================= LOAD DATA (JSON SAFE) ================= */
 async function loadData(){
-  status.innerText = "Loading data…";
-  clearUI();
+  status.innerText="Loading data...";
   try{
-    const xmlText = await safeFetch(
-      `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=xml&limit=800`
+    const res = await fetch(
+      `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&limit=500`
     );
-
-    const xml = parseXMLSafe(xmlText);
-    if(!xml) throw new Error("XML_ERROR");
-
-    const rows = [...xml.getElementsByTagName("record")];
-    allData = rows.map(r=>{
-      const o = {};
-      [...r.children].forEach(c=>o[c.tagName] = c.textContent || "");
-      return o;
-    });
-
-    if(!allData.length){
-      status.innerText = "No data received";
+    if(!res.ok) throw "API error";
+    const json = await res.json();
+    if(!json.records || !json.records.length){
+      status.innerText="No data received";
       return;
     }
-
-    buildFilters();
-    applyFiltersSafe();
-    status.innerText = `Updated successfully (${allData.length} records)`;
+    allData = json.records.map(normalize);
+    buildStateDistrict();
+    applyFilters();
+    updateLastUpdated();
+    status.innerText = `Loaded ${allData.length} records`;
   }catch{
-    status.innerText = "Service temporarily unavailable. Please try later.";
-    clearUI();
+    status.innerText="Failed to load data";
+    showError("Data service temporarily unavailable.");
   }
 }
 
 /* ================= FILTERS ================= */
-function buildFilters(){
-  stateFilter.innerHTML = '<option value="">All States</option>';
-  commodityFilter.innerHTML = '<option value="">All Commodities</option>';
+function buildStateDistrict(){
+  stateFilter.innerHTML='<option value="">All States</option>';
+  districtFilter.innerHTML='<option value="">All Districts</option>';
 
   [...new Set(allData.map(r=>r.state).filter(Boolean))]
-    .forEach(s=>stateFilter.innerHTML+=`<option>${s}</option>`);
+    .sort().forEach(s=>stateFilter.innerHTML+=`<option>${s}</option>`);
 
-  [...new Set(allData.map(r=>r.commodity).filter(Boolean))]
-    .forEach(c=>commodityFilter.innerHTML+=`<option>${c}</option>`);
+  stateFilter.onchange = ()=>{
+    districtFilter.innerHTML='<option value="">All Districts</option>';
+    [...new Set(allData.filter(r=>r.state===stateFilter.value)
+      .map(r=>r.district).filter(Boolean))]
+      .sort().forEach(d=>districtFilter.innerHTML+=`<option>${d}</option>`);
+    applyFilters();
+  };
+  districtFilter.onchange = applyFilters;
+  search.onkeyup = applyFilters;
+  dateFilter.onchange = applyFilters;
 }
 
-function applyFiltersSafe(){
-  if(!allData.length){ clearUI(); return; }
+/* ================= APPLY FILTER ================= */
+function applyFilters(){
+  const s=stateFilter.value, d=districtFilter.value;
+  const q=search.value.toLowerCase(), date=dateFilter.value;
 
-  const s = stateFilter.value.toLowerCase();
-  const c = commodityFilter.value.toLowerCase();
-  const q = search.value.toLowerCase();
-  const d = dateFilter.value;
-
-  const filtered = allData.filter(r=>{
-    try{
-      if(s && (r.state||"").toLowerCase()!==s) return false;
-      if(c && (r.commodity||"").toLowerCase()!==c) return false;
-      if(d && !(r.arrival_date||"").includes(d)) return false;
-      if(q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
-      return true;
-    }catch{ return false; }
+  const f = allData.filter(r=>{
+    if(s && r.state!==s) return false;
+    if(d && r.district!==d) return false;
+    if(date && !r.arrival_date.includes(date)) return false;
+    if(q && !(r.market+r.commodity).toLowerCase().includes(q)) return false;
+    return true;
   });
 
-  buildTable(filtered);
-  buildCommodityChart(filtered);
-  buildTrendChart(filtered);
+  buildTable(f);
+  buildCommodityChart(f);
+  buildTrendChart(f);
 }
 
 /* ================= TABLE ================= */
 function buildTable(data){
-  if(!data.length){ table.innerHTML=""; return; }
+  if(!data.length){table.innerHTML="";return;}
   let html="<tr>";
   Object.keys(data[0]).forEach(k=>html+=`<th>${k}</th>`);
   html+="</tr>";
@@ -267,14 +279,13 @@ function buildTable(data){
 
 /* ================= CHARTS ================= */
 function buildCommodityChart(data){
-  destroyChart(commodityChart);
+  if(commodityChart) commodityChart.destroy();
   if(!data.length) return;
 
   const map={};
   data.forEach(r=>{
-    const k=r.commodity||"Other";
     const p=parseFloat(r.modal_price||0);
-    if(!isNaN(p)) map[k]=(map[k]||[]).concat(p);
+    if(!isNaN(p)) (map[r.commodity]??=[]).push(p);
   });
 
   const labels=Object.keys(map).slice(0,8);
@@ -284,38 +295,34 @@ function buildCommodityChart(data){
 
   commodityChart=new Chart(commodityChart,{
     type:"bar",
-    data:{ labels,
-      datasets:[{label:"Avg Modal Price",data:values,backgroundColor:"#002147"}]
-    }
+    data:{labels,datasets:[{label:"Avg Price",data:values,backgroundColor:"#002147"}]}
   });
 }
 
 function buildTrendChart(data){
-  destroyChart(trendChart);
+  if(trendChart) trendChart.destroy();
   if(!data.length) return;
 
   const byDate={};
   data.forEach(r=>{
-    const d=r.arrival_date;
     const p=parseFloat(r.modal_price||0);
-    if(d && !isNaN(p)) byDate[d]=(byDate[d]||[]).concat(p);
+    if(r.arrival_date && !isNaN(p))
+      (byDate[r.arrival_date]??=[]).push(p);
   });
 
   const dates=Object.keys(byDate).slice(-30);
   const values=dates.map(d=>{
-    const a=byDate[d];
-    return (a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
+    const a=byDate[d]; return (a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
   });
 
   trendChart=new Chart(trendChart,{
     type:"line",
-    data:{ labels:dates,
-      datasets:[{label:"Average Modal Price",data:values,borderColor:"#002147",tension:.3}]
-    }
+    data:{labels:dates,
+      datasets:[{label:"Avg Modal Price",data:values,borderColor:"#002147",tension:.3}]}
   });
 }
 
-/* ================= EXPORT ================= */
+/* ================= EXPORT & UI ================= */
 function downloadCSV(){
   if(!allData.length) return;
   let csv=Object.keys(allData[0]).join(",")+"\n";
@@ -325,22 +332,16 @@ function downloadCSV(){
   a.download="mandi_prices.csv";
   a.click();
 }
-
-/* ================= DARK MODE ================= */
-function toggleDark(){
-  document.body.classList.toggle("dark");
-}
+function toggleDark(){document.body.classList.toggle("dark");}
 
 /* ================= AUTO DAILY REFRESH ================= */
 (function(){
-  try{
-    const key="mandi_last_refresh";
-    const today=new Date().toISOString().slice(0,10);
-    if(localStorage.getItem(key)!==today){
-      localStorage.setItem(key,today);
-      setTimeout(loadData,1500);
-    }
-  }catch{}
+  const k="mandi_daily_refresh";
+  const t=new Date().toISOString().slice(0,10);
+  if(localStorage.getItem(k)!==t){
+    localStorage.setItem(k,t);
+    setTimeout(loadData,1500);
+  }
 })();
 </script>
 
