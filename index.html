@@ -2,306 +2,118 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-  <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Home | GPS Web Camera</title>
+<title>Home | Public Utility Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+/* ---------- BASE ---------- */
 body{
   margin:0;
   font-family:Segoe UI,Arial;
-  background:#020617;
+  background:
+    radial-gradient(circle at top,#0b5ed7,#020617 60%);
+  min-height:100vh;
   color:#fff;
   display:flex;
   align-items:center;
   justify-content:center;
-  height:100vh;
+  overflow:hidden;
 }
+
+/* ---------- GRID ---------- */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:24px;
+  max-width:900px;
+  width:90%;
+  animation: pageFade .8s ease forwards;
+}
+
+/* ---------- CARD ---------- */
 .card{
-  background:rgba(255,255,255,0.08);
+  background:rgba(255,255,255,.08);
   backdrop-filter: blur(16px);
-  border-radius:20px;
-  padding:30px;
+  border-radius:22px;
+  padding:28px;
   text-align:center;
   box-shadow:0 30px 60px rgba(0,0,0,.6);
+  transform: translateY(40px) scale(.95);
+  opacity:0;
+  animation: cardIn .8s ease forwards;
 }
-a{
+.card:nth-child(1){animation-delay:.2s}
+.card:nth-child(2){animation-delay:.4s}
+
+.card:hover{
+  transform: translateY(-6px) scale(1.02);
+  box-shadow:0 40px 80px rgba(0,0,0,.7);
+}
+
+/* ---------- TEXT ---------- */
+.card h2{margin:10px 0}
+.card p{opacity:.8;font-size:14px}
+
+/* ---------- BUTTON ---------- */
+.card a{
   display:inline-block;
-  margin-top:20px;
-  padding:14px 24px;
+  margin-top:18px;
+  padding:12px 24px;
   background:#0b5ed7;
   color:#fff;
   text-decoration:none;
   border-radius:14px;
-  font-size:18px;
+  font-size:16px;
+  transition:.3s;
 }
-a:hover{opacity:.9}
-</style>
-</head>
-
-<body>
-
-<div class="card">
-  <h1>📸 GPS Web Camera</h1>
-  <p>Capture photo with location & time</p>
-  <a href="cam.html">Open Camera</a>
-</div>
-
-</body>
-</html>
-<title>PIN & IFSC Finder | Govt Style (Glass)</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<style>
-:root{--blue:#0b5ed7;--text:#e5e7eb}
-body{
-  margin:0;font-family:Segoe UI,Arial,sans-serif;color:var(--text);
-  background:
-    radial-gradient(circle at 20% 20%, rgba(11,94,215,.25), transparent 40%),
-    radial-gradient(circle at 80% 30%, rgba(14,165,233,.25), transparent 45%),
-    radial-gradient(circle at 50% 80%, rgba(99,102,241,.25), transparent 40%),
-    linear-gradient(135deg,#020617,#020617);
-  min-height:100vh;
-}
-header{
-  position:sticky;top:0;z-index:10;
-  background:rgba(2,6,23,.65);
-  backdrop-filter: blur(16px);
-  border-bottom:1px solid rgba(255,255,255,.15);
-  color:#fff;padding:18px;
-}
-.container{max-width:1200px;margin:auto;padding:16px}
-.card{
-  background:rgba(255,255,255,0.08);
-  backdrop-filter: blur(18px) saturate(140%);
-  border-radius:18px;padding:18px;margin-bottom:18px;
-  border:1px solid rgba(255,255,255,.18);
-  box-shadow:0 25px 45px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.15);
-  transition:.35s;
-}
-.card:hover{transform:translateY(-6px)}
-input,button{
-  padding:10px 14px;margin:4px;border-radius:12px;
-  border:1px solid rgba(255,255,255,.25);
-  background:rgba(255,255,255,.12);color:#fff;
-}
-button{
-  background:linear-gradient(145deg,rgba(11,94,215,.9),rgba(8,66,152,.9));
-  box-shadow:0 10px 25px rgba(11,94,215,.55), inset 0 1px 0 rgba(255,255,255,.25);
-  cursor:pointer;
-}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.15)}
-th{background:rgba(255,255,255,.18)}
-td{background:rgba(255,255,255,.08)}
-#globalError{
-  display:none;background:rgba(185,28,28,.75);
-  backdrop-filter: blur(12px);
-  padding:10px;text-align:center
+.card a:hover{
+  background:#2563eb;
+  box-shadow:0 0 0 6px rgba(37,99,235,.25);
 }
 
-/* MAP COLLAPSE */
-.map-header{display:flex;justify-content:space-between;align-items:center}
-#mapWrapper{max-height:0;opacity:0;overflow:hidden;transition:.45s}
-#mapWrapper.expanded{max-height:420px;opacity:1}
-#map{height:300px;margin-top:14px;border-radius:16px;border:1px solid rgba(255,255,255,.2)}
+/* ---------- FOOTER ---------- */
 footer{
-  background:rgba(2,6,23,.65);border-top:1px solid rgba(255,255,255,.15);
-  padding:14px;text-align:center;font-size:12px
+  position:fixed;
+  bottom:12px;
+  font-size:12px;
+  opacity:.6;
+}
+
+/* ---------- KEYFRAMES ---------- */
+@keyframes cardIn{
+  to{
+    transform: translateY(0) scale(1);
+    opacity:1;
+  }
+}
+@keyframes pageFade{
+  from{opacity:0}
+  to{opacity:1}
 }
 </style>
 </head>
 
 <body>
-<div id="globalError">⚠️ Error</div>
 
-<header>
-  <h2>India Post PIN & IFSC Finder</h2>
-  <p>Location-based Public Utility</p>
-</header>
+<div class="grid">
 
-<div class="container">
-
-<!-- 1️⃣ LOCATION -->
-<div class="card">
-  <h3>📍 Your Location</h3>
-  <button onclick="detectLocation()">Use My Location</button>
-  <button onclick="drawRadius(5); autoOpenMap()">5 km</button>
-  <button onclick="drawRadius(10); autoOpenMap()">10 km</button>
-  <div id="locInfo"></div>
-</div>
-
-<!-- 2️⃣ BANKS / ATMs -->
-<div class="card">
-  <h3>🏦 / 🏧 Banks & ATMs</h3>
-  <label><input type="checkbox" id="showBanks" checked> Banks</label>
-  <label><input type="checkbox" id="showATMs" checked> ATMs</label>
-  <div id="bankList">No data</div>
-</div>
-
-<!-- 3️⃣ PIN / IFSC -->
-<div class="card">
-  <h3>📮 PIN Code</h3>
-  <input id="pinInput" placeholder="6-digit PIN">
-  <button onclick="findPIN()">Search</button>
-  <div id="pinResult"></div>
-</div>
-
-<div class="card">
-  <h3>🏦 IFSC Code</h3>
-  <input id="ifscInput" placeholder="IFSC">
-  <button onclick="findIFSC()">Search</button>
-  <div id="ifscResult"></div>
-</div>
-
-<!-- 4️⃣ MAP (BOTTOM, COLLAPSIBLE) -->
-<div class="card map-card">
-  <div class="map-header">
-    <h3>🗺 Nearby Places Map</h3>
-    <button id="mapToggleBtn" onclick="toggleMap()">Show Map ⬇️</button>
+  <div class="card">
+    <h2>📸 GPS Web Camera</h2>
+    <p>Capture photo with location & time</p>
+    <a href="cam.html">Open Camera</a>
   </div>
-  <div id="mapWrapper">
-    <div id="map"></div>
+
+  <div class="card">
+    <h2>📮 PIN & IFSC Finder</h2>
+    <p>Location-based public utility</p>
+    <a href="finder.html">Open Finder</a>
   </div>
-</div>
 
 </div>
 
 <footer>
-  <div>Data Source: India Post (Public) & RBI IFSC (Public)</div>
-  <div>Designed & Developed by <strong>Rankaj Kumar</strong></div>
+  Designed & Developed by <strong>Rankaj Kumar</strong>
 </footer>
 
-<script>
-/* ERROR */
-function showError(m){globalError.innerText="⚠️ "+m;globalError.style.display="block"}
-function clearError(){globalError.style.display="none"}
-
-/* MAP */
-const map=L.map("map").setView([22.97,78.65],5);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-let userLat=null,userLon=null,userMarker=null,radiusCircle=null,poiMarkers=[];
-
-/* COLLAPSE */
-function toggleMap(){
-  const w=document.getElementById("mapWrapper");
-  const b=document.getElementById("mapToggleBtn");
-  if(w.classList.contains("expanded")){
-    w.classList.remove("expanded"); b.innerText="Show Map ⬇️";
-  }else{
-    w.classList.add("expanded"); b.innerText="Hide Map ⬆️";
-    setTimeout(()=>map.invalidateSize(),300);
-  }
-}
-function autoOpenMap(){
-  const w=document.getElementById("mapWrapper");
-  if(!w.classList.contains("expanded")) toggleMap();
-}
-
-/* LOCATION */
-function detectLocation(){
-  clearError();
-  if(!navigator.geolocation){showError("Geolocation not supported");return}
-  navigator.geolocation.getCurrentPosition(p=>{
-    userLat=p.coords.latitude; userLon=p.coords.longitude;
-    if(userMarker) map.removeLayer(userMarker);
-    userMarker=L.marker([userLat,userLon]).addTo(map).bindPopup("Your Location").openPopup();
-    map.setView([userLat,userLon],12);
-    locInfo.innerText=`Lat ${userLat.toFixed(4)}, Lon ${userLon.toFixed(4)}`;
-  },()=>showError("Location permission denied"),{enableHighAccuracy:true,timeout:10000});
-}
-
-/* RADIUS */
-function drawRadius(km){
-  if(!userLat||!userLon){showError("Detect location first");return}
-  if(radiusCircle) map.removeLayer(radiusCircle);
-  radiusCircle=L.circle([userLat,userLon],{radius:km*1000,color:"#0b5ed7",fillOpacity:.15}).addTo(map);
-  map.fitBounds(radiusCircle.getBounds());
-  findNearbyPlaces(km);
-}
-
-/* DISTANCE */
-function distanceKm(a,b,c,d){
-  const R=6371, dLat=(c-a)*Math.PI/180, dLon=(d-b)*Math.PI/180;
-  const x=Math.sin(dLat/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dLon/2)**2;
-  return (R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x))).toFixed(2);
-}
-
-/* BANK / ATM (HARDENED) */
-async function findNearbyPlaces(km){
-  clearError(); bankList.innerText="Searching nearby…";
-  poiMarkers.forEach(m=>map.removeLayer(m)); poiMarkers=[];
-  if(!showBanks.checked && !showATMs.checked){bankList.innerText="Select Bank or ATM";return}
-
-  const r=km*1000, parts=[];
-  if(showBanks.checked) parts.push(`
-    node["amenity"="bank"](around:${r},${userLat},${userLon});
-    way["amenity"="bank"](around:${r},${userLat},${userLon});
-    node["office"="financial"](around:${r},${userLat},${userLon});
-  `);
-  if(showATMs.checked) parts.push(`
-    node["amenity"="atm"](around:${r},${userLat},${userLon});
-    node["atm"="yes"](around:${r},${userLat},${userLon});
-  `);
-
-  const q=`[out:json][timeout:25];(${parts.join("")});out center tags;`;
-  try{
-    const res=await fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:q});
-    const d=await res.json();
-    if(!d.elements||!d.elements.length){
-      if(km<20){bankList.innerText=`No places in ${km} km, expanding…`;return setTimeout(()=>findNearbyPlaces(km*2),700)}
-      return bankList.innerText="No banks / ATMs found nearby.";
-    }
-    const rows=d.elements.map(e=>{
-      const lat=e.lat||e.center?.lat, lon=e.lon||e.center?.lon;
-      if(!lat||!lon) return null;
-      return {name:e.tags?.name||"Bank / ATM",type:e.tags?.amenity||e.tags?.office||"financial",
-              lat,lon,dist:distanceKm(userLat,userLon,lat,lon)};
-    }).filter(Boolean).sort((a,b)=>a.dist-b.dist);
-
-    let html="<table><tr><th>Name</th><th>Type</th><th>Distance (km)</th><th>Navigate</th></tr>";
-    rows.slice(0,25).forEach(r=>{
-      const m=L.marker([r.lat,r.lon]).addTo(map).bindPopup(`${r.name}<br>${r.dist} km`);
-      poiMarkers.push(m);
-      html+=`<tr><td>${r.name}</td><td>${r.type}</td><td>${r.dist}</td>
-      <td><a target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lon}">🧭 Open</a></td></tr>`;
-    });
-    bankList.innerHTML=html+"</table>";
-  }catch{showError("Nearby bank service temporarily unavailable")}
-}
-
-/* PIN */
-async function findPIN(){
-  clearError(); pinResult.innerHTML="";
-  const pin=pinInput.value.trim(); if(pin.length!==6) return showError("Enter valid PIN");
-  try{
-    const r=await fetch(`https://api.postalpincode.in/pincode/${pin}`), d=await r.json();
-    if(d[0].Status!=="Success") throw 0;
-    const p=d[0].PostOffice[0];
-    pinResult.innerHTML=`<table><tr><th>Post Office</th><td>${p.Name}</td></tr>
-      <tr><th>District</th><td>${p.District}</td></tr><tr><th>State</th><td>${p.State}</td></tr></table>`;
-  }catch{showError("PIN not found")}
-}
-
-/* IFSC */
-async function findIFSC(){
-  clearError(); ifscResult.innerHTML="";
-  const c=ifscInput.value.trim().toUpperCase(); if(c.length<8) return showError("Invalid IFSC");
-  try{
-    const r=await fetch(`https://ifsc.razorpay.com/${c}`); if(!r.ok) throw 0;
-    const d=await r.json();
-    ifscResult.innerHTML=`<table><tr><th>Bank</th><td>${d.BANK}</td></tr>
-      <tr><th>Branch</th><td>${d.BRANCH}</td></tr><tr><th>City</th><td>${d.CITY}</td></tr>
-      <tr><th>State</th><td>${d.STATE}</td></tr></table>`;
-  }catch{showError("IFSC not found")}
-}
-</script>
 </body>
 </html>
