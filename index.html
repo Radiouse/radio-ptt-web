@@ -2,55 +2,68 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Property Card Distribution | Govt Dashboard</title>
+<title>Daily Mandi Prices | Government of India</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- Leaflet Map -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
 :root{
-  --bg:#f4f6f9;
-  --card:#fff;
-  --text:#222;
-  --blue:#0b5ed7;
+  --bg:#f2f6fa;
+  --card:#ffffff;
+  --text:#1f2937;
+  --blue:#002147;
+  --border:#cfd8e3;
 }
 .dark{
-  --bg:#121212;
-  --card:#1e1e1e;
-  --text:#eee;
-  --blue:#4dabf7;
+  --bg:#0f172a;
+  --card:#111827;
+  --text:#e5e7eb;
+  --blue:#2563eb;
+  --border:#374151;
 }
 body{
   margin:0;
-  font-family:system-ui,Arial;
+  font-family:Segoe UI,Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
 }
-header{
-  background:var(--blue);
+.nic-top{
+  background:#000;
   color:#fff;
-  padding:14px;
-  text-align:center;
+  font-size:12px;
+  padding:6px 14px;
 }
+header{
+  background:linear-gradient(90deg,#001a33,#002147);
+  color:#fff;
+  padding:16px;
+}
+header h1{margin:0;font-size:22px}
+header p{margin:4px 0 0;font-size:13px;opacity:.9}
+
 .container{
-  max-width:1200px;
+  max-width:1400px;
   margin:auto;
-  padding:15px;
+  padding:16px;
 }
 .card{
   background:var(--card);
-  padding:15px;
-  border-radius:8px;
-  margin-bottom:15px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:14px;
+  margin-bottom:14px;
 }
-button,select{
-  padding:8px 12px;
+button,select,input{
+  padding:8px 10px;
   margin:4px;
+  border:1px solid var(--border);
+  border-radius:4px;
+}
+button{
+  background:var(--blue);
+  color:#fff;
+  cursor:pointer;
 }
 table{
   width:100%;
@@ -58,75 +71,189 @@ table{
   font-size:13px;
 }
 th,td{
-  border:1px solid #ccc;
+  border:1px solid var(--border);
   padding:6px;
   white-space:nowrap;
 }
-th{background:#eef3fb}
-.dark th{background:#2a2a2a}
+th{background:#e6effa}
+.dark th{background:#1f2937}
 
-#map{height:300px}
+footer{
+  background:#f8fafc;
+  border-top:2px solid #002147;
+  padding:12px;
+  text-align:center;
+  font-size:12px;
+  color:#374151;
+}
+.dark footer{
+  background:#020617;
+  color:#cbd5f5;
+}
 </style>
 </head>
 
 <body>
 
+<div class="nic-top">
+  Government of India | Ministry of Agriculture & Farmers Welfare
+</div>
+
 <header>
-  <h2>Property Card Distribution</h2>
-  <p>SVAMITVA | Open Govt Data</p>
+  <h1>Daily Market (Mandi) Prices</h1>
+  <p>Open Government Data Platform India (NIC)</p>
 </header>
 
 <div class="container">
 
 <div class="card">
-  <button onclick="loadData()">Load Data</button>
-  <button onclick="toggleDark()">🌙 Dark Mode</button>
-  <button onclick="downloadCSV()">⬇ CSV</button>
-</div>
+  <button onclick="loadData()">Load / Refresh Data</button>
+  <button onclick="toggleDark()">🌙 Dark</button>
+  <button onclick="downloadCSV()">⬇ CSV</button><br>
 
-<div class="card">
-  <select id="stateFilter" onchange="applyFilter()">
+  <select id="stateFilter" onchange="applyFiltersSafe()">
     <option value="">All States</option>
   </select>
-  <select id="districtFilter" onchange="applyFilter()">
-    <option value="">All Districts</option>
+
+  <select id="commodityFilter" onchange="applyFiltersSafe()">
+    <option value="">All Commodities</option>
   </select>
+
+  <input type="date" id="dateFilter" onchange="applyFiltersSafe()">
+  <input type="text" id="search" placeholder="Search mandi / district" onkeyup="applyFiltersSafe()">
+
+  <div id="status">Idle</div>
 </div>
 
 <div class="card">
-  <canvas id="chart"></canvas>
+  <h3>📊 Commodity-wise Comparison</h3>
+  <canvas id="commodityChart"></canvas>
 </div>
 
 <div class="card">
-  <div id="map"></div>
+  <h3>📅 Last 30 Days Price Trend</h3>
+  <canvas id="trendChart"></canvas>
 </div>
 
-<div class="card">
-  <div style="overflow-x:auto">
-    <table id="table"></table>
-  </div>
+<div class="card" style="overflow-x:auto">
+  <table id="table"></table>
 </div>
 
 </div>
+
+<footer>
+  © Government of India | Designed & Developed by NIC  
+  <br>Data Source: data.gov.in
+</footer>
 
 <script>
-const API_KEY="579b464db66ec23bdd000001dd4bec4f88d44e427141d80a8f9a5fcc";
-const RESOURCE_ID="f978ad28-9827-4afe-8484-17133f736af7";
+/* ================= CONFIG ================= */
+const API_KEY = "579b464db66ec23bdd000001dd4bec4f88d44e427141d80a8f9a5fcc";
+const RESOURCE_ID = "9ef84268-d588-465a-a308-a864a43d0070";
 
-let records=[], map, chart;
+/* ================= STATE ================= */
+let allData = [];
+let commodityChart = null;
+let trendChart = null;
 
-async function loadData(){
-  const res = await fetch(`https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=json&limit=100`);
-  const json = await res.json();
-  records = json.records || [];
-  buildTable(records);
-  buildFilters(records);
-  buildChart(records);
-  buildMap(records);
+/* ================= UTILITIES ================= */
+async function safeFetch(url, timeout = 15000){
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(), timeout);
+  const res = await fetch(url, { signal: controller.signal });
+  if(!res.ok) throw new Error("FETCH_FAILED");
+  return await res.text();
 }
 
+function parseXMLSafe(text){
+  try{
+    const xml = new DOMParser().parseFromString(text, "application/xml");
+    if(xml.getElementsByTagName("parsererror").length) return null;
+    return xml;
+  }catch{ return null; }
+}
+
+function destroyChart(c){
+  try{ if(c) c.destroy(); }catch{}
+}
+
+function clearUI(){
+  table.innerHTML = "";
+  destroyChart(commodityChart);
+  destroyChart(trendChart);
+}
+
+/* ================= LOAD DATA ================= */
+async function loadData(){
+  status.innerText = "Loading data…";
+  clearUI();
+  try{
+    const xmlText = await safeFetch(
+      `https://api.data.gov.in/resource/${RESOURCE_ID}?api-key=${API_KEY}&format=xml&limit=800`
+    );
+
+    const xml = parseXMLSafe(xmlText);
+    if(!xml) throw new Error("XML_ERROR");
+
+    const rows = [...xml.getElementsByTagName("record")];
+    allData = rows.map(r=>{
+      const o = {};
+      [...r.children].forEach(c=>o[c.tagName] = c.textContent || "");
+      return o;
+    });
+
+    if(!allData.length){
+      status.innerText = "No data received";
+      return;
+    }
+
+    buildFilters();
+    applyFiltersSafe();
+    status.innerText = `Updated successfully (${allData.length} records)`;
+  }catch{
+    status.innerText = "Service temporarily unavailable. Please try later.";
+    clearUI();
+  }
+}
+
+/* ================= FILTERS ================= */
+function buildFilters(){
+  stateFilter.innerHTML = '<option value="">All States</option>';
+  commodityFilter.innerHTML = '<option value="">All Commodities</option>';
+
+  [...new Set(allData.map(r=>r.state).filter(Boolean))]
+    .forEach(s=>stateFilter.innerHTML+=`<option>${s}</option>`);
+
+  [...new Set(allData.map(r=>r.commodity).filter(Boolean))]
+    .forEach(c=>commodityFilter.innerHTML+=`<option>${c}</option>`);
+}
+
+function applyFiltersSafe(){
+  if(!allData.length){ clearUI(); return; }
+
+  const s = stateFilter.value.toLowerCase();
+  const c = commodityFilter.value.toLowerCase();
+  const q = search.value.toLowerCase();
+  const d = dateFilter.value;
+
+  const filtered = allData.filter(r=>{
+    try{
+      if(s && (r.state||"").toLowerCase()!==s) return false;
+      if(c && (r.commodity||"").toLowerCase()!==c) return false;
+      if(d && !(r.arrival_date||"").includes(d)) return false;
+      if(q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
+      return true;
+    }catch{ return false; }
+  });
+
+  buildTable(filtered);
+  buildCommodityChart(filtered);
+  buildTrendChart(filtered);
+}
+
+/* ================= TABLE ================= */
 function buildTable(data){
-  if(!data.length) return;
+  if(!data.length){ table.innerHTML=""; return; }
   let html="<tr>";
   Object.keys(data[0]).forEach(k=>html+=`<th>${k}</th>`);
   html+="</tr>";
@@ -138,59 +265,83 @@ function buildTable(data){
   table.innerHTML=html;
 }
 
-function buildFilters(data){
-  let states=[...new Set(data.map(r=>r.state||r.State))];
-  stateFilter.innerHTML='<option value="">All States</option>';
-  states.forEach(s=>stateFilter.innerHTML+=`<option>${s}</option>`);
-}
+/* ================= CHARTS ================= */
+function buildCommodityChart(data){
+  destroyChart(commodityChart);
+  if(!data.length) return;
 
-function applyFilter(){
-  let s=stateFilter.value.toLowerCase();
-  let d=districtFilter.value.toLowerCase();
-  let f=records.filter(r=>{
-    let st=(r.state||r.State||"").toLowerCase();
-    let di=(r.district||r.District||"").toLowerCase();
-    return (!s||st===s)&&(!d||di===d);
-  });
-  buildTable(f);
-}
-
-function buildChart(data){
-  let count={};
+  const map={};
   data.forEach(r=>{
-    let s=r.state||r.State||"Unknown";
-    count[s]=(count[s]||0)+1;
+    const k=r.commodity||"Other";
+    const p=parseFloat(r.modal_price||0);
+    if(!isNaN(p)) map[k]=(map[k]||[]).concat(p);
   });
-  if(chart) chart.destroy();
-  chart=new Chart(document.getElementById("chart"),{
+
+  const labels=Object.keys(map).slice(0,8);
+  const values=labels.map(k=>{
+    const a=map[k]; return (a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
+  });
+
+  commodityChart=new Chart(commodityChart,{
     type:"bar",
-    data:{labels:Object.keys(count),
-      datasets:[{label:"Records",data:Object.values(count)}]}
+    data:{ labels,
+      datasets:[{label:"Avg Modal Price",data:values,backgroundColor:"#002147"}]
+    }
   });
 }
 
-function buildMap(data){
-  if(!map){
-    map=L.map("map").setView([22,78],5);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
-  }
+function buildTrendChart(data){
+  destroyChart(trendChart);
+  if(!data.length) return;
+
+  const byDate={};
+  data.forEach(r=>{
+    const d=r.arrival_date;
+    const p=parseFloat(r.modal_price||0);
+    if(d && !isNaN(p)) byDate[d]=(byDate[d]||[]).concat(p);
+  });
+
+  const dates=Object.keys(byDate).slice(-30);
+  const values=dates.map(d=>{
+    const a=byDate[d];
+    return (a.reduce((x,y)=>x+y,0)/a.length).toFixed(1);
+  });
+
+  trendChart=new Chart(trendChart,{
+    type:"line",
+    data:{ labels:dates,
+      datasets:[{label:"Average Modal Price",data:values,borderColor:"#002147",tension:.3}]
+    }
+  });
 }
 
+/* ================= EXPORT ================= */
 function downloadCSV(){
-  let csv="";
-  records.forEach((r,i)=>{
-    if(i===0) csv+=Object.keys(r).join(",")+"\n";
-    csv+=Object.values(r).join(",")+"\n";
-  });
-  let a=document.createElement("a");
+  if(!allData.length) return;
+  let csv=Object.keys(allData[0]).join(",")+"\n";
+  allData.forEach(r=>csv+=Object.values(r).join(",")+"\n");
+  const a=document.createElement("a");
   a.href=URL.createObjectURL(new Blob([csv]));
-  a.download="property_card.csv";
+  a.download="mandi_prices.csv";
   a.click();
 }
 
+/* ================= DARK MODE ================= */
 function toggleDark(){
   document.body.classList.toggle("dark");
 }
+
+/* ================= AUTO DAILY REFRESH ================= */
+(function(){
+  try{
+    const key="mandi_last_refresh";
+    const today=new Date().toISOString().slice(0,10);
+    if(localStorage.getItem(key)!==today){
+      localStorage.setItem(key,today);
+      setTimeout(loadData,1500);
+    }
+  }catch{}
+})();
 </script>
 
 </body>
