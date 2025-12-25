@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Product Barcode Scanner | Public Utility</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+/* ==== SAME DESIGN (unchanged) ==== */
+:root{
+  --bg1:#0b5ed7;--bg2:#020617;--card:rgba(255,255,255,.12);
+  --border:rgba(255,255,255,.18);--good:#16a34a;--bad:#dc2626;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;
+  background:radial-gradient(circle at top,var(--bg1) 0%,var(--bg2) 65%);
+  font-family:Segoe UI,Arial;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+}
+.card{
+  width:460px;max-width:96%;
+  background:var(--card);backdrop-filter:blur(18px);
+  border:1px solid var(--border);border-radius:26px;
+  padding:26px;box-shadow:0 40px 90px rgba(0,0,0,.75);
+}
+.header{text-align:center}
+.header h2{margin:0}
+.header p{font-size:13px;opacity:.85}
+.lang{text-align:right;margin:10px 0}
+.lang button{
+  background:#0b5ed7;border:none;color:#fff;
+  padding:6px 14px;border-radius:14px;cursor:pointer;
+}
+#reader{border-radius:18px;overflow:hidden}
+.result{
+  margin-top:18px;padding:16px;background:rgba(0,0,0,.28);
+  border-radius:20px;display:none;
+}
+.result img{
+  width:100%;max-height:190px;object-fit:contain;
+  border-radius:14px;margin-bottom:12px;
+}
+.badge{display:inline-block;padding:6px 14px;border-radius:999px;font-size:12px}
+.good{background:var(--good)} .bad{background:var(--bad)}
+.label{font-size:12px;opacity:.7}
+.value{font-size:14px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+table td{padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.15)}
+.footer{text-align:center;font-size:11px;opacity:.6;margin-top:14px}
+</style>
+</head>
+
+<body>
+<div class="card">
+  <div class="header">
+    <h2>📦 Product Barcode Scanner</h2>
+    <p id="subtitle">Scan grocery & packaged food products</p>
+  </div>
+
+  <div class="lang">
+    <button onclick="toggleLang()">🇮🇳 हिंदी / English</button>
+  </div>
+
+  <div id="reader"></div>
+
+  <div class="result" id="result">
+    <img id="pimg">
+    <div id="statusBadge" class="badge"></div>
+
+    <div class="label" id="l_name">Product Name</div>
+    <div class="value" id="pname"></div>
+
+    <div class="label" id="l_brand">Brand</div>
+    <div class="value" id="pbrand"></div>
+
+    <div class="label">Barcode</div>
+    <div class="value" id="pcode"></div>
+
+    <div class="label" id="l_ing">Ingredients</div>
+    <div class="value" id="ping"></div>
+
+    <div class="label" id="l_nut">Nutrition (per 100g)</div>
+    <table id="nutTable"></table>
+  </div>
+
+  <div class="footer">Data Source: OpenFoodFacts</div>
+</div>
+
+<audio id="beep">
+  <source src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg">
+</audio>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+let lang="en", lastCode=null;
+
+/* Language */
+function toggleLang(){
+  lang=lang==="en"?"hi":"en";
+  subtitle.innerText=lang==="en"
+   ?"Scan grocery & packaged food products"
+   :"किराना व पैक्ड खाद्य उत्पाद स्कैन करें";
+}
+
+/* Scan */
+function onScanSuccess(code){
+  if(code===lastCode) return;   // 🔒 duplicate fix
+  lastCode=code;
+  document.getElementById("beep").play();
+  fetchProduct(code);
+}
+
+/* Fetch product */
+function fetchProduct(code){
+ fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`)
+ .then(r=>r.json()).then(d=>{
+  if(d.status!==1){
+    alert(lang==="en"?"Product not found":"उत्पाद नहीं मिला");
+    return;
+  }
+  const p=d.product;
+  pimg.src=p.image_url||"https://via.placeholder.com/300x200";
+  pname.innerText=p.product_name||"N/A";
+  pbrand.innerText=p.brands||"N/A";
+  pcode.innerText=code;
+  ping.innerText=p.ingredients_text||"N/A";
+
+  statusBadge.className="badge "+(p.product_name&&p.brands?"good":"bad");
+  statusBadge.innerText=
+    p.product_name&&p.brands
+    ?(lang==="en"?"✔ Original Product":"✔ असली उत्पाद")
+    :(lang==="en"?"⚠ Possibly Fake":"⚠ संदिग्ध उत्पाद");
+
+  nutTable.innerHTML="";
+  const nut=p.nutriments||{};
+  ["energy","fat","sugars","proteins","salt"].forEach(k=>{
+    if(nut[k+"_100g"])
+      nutTable.innerHTML+=`<tr><td>${k}</td><td>${nut[k+"_100g"]}</td></tr>`;
+  });
+
+  result.style.display="block";
+ });
+}
+
+/* Init */
+new Html5QrcodeScanner(
+ "reader",{fps:10,qrbox:{width:260,height:160}},false
+).render(onScanSuccess);
+</script>
+</body>
+</html>
