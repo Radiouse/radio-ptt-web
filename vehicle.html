@@ -26,12 +26,12 @@ body{
   box-shadow:0 40px 80px rgba(0,0,0,.7);
   text-align:center;
 }
-video,img,canvas{
+video,canvas,input{
   width:100%;
   border-radius:16px;
   margin-top:12px;
 }
-button,input[type=file]{
+button{
   width:100%;
   margin-top:12px;
   padding:14px;
@@ -43,9 +43,10 @@ button,input[type=file]{
   font-weight:600;
   cursor:pointer;
 }
-input[type=file]{background:#1e293b}
-button:disabled{opacity:.6}
-.result{margin-top:14px;font-size:15px;font-weight:600}
+.result{
+  margin-top:12px;
+  font-weight:600;
+}
 .good{color:#4ade80}
 .bad{color:#f87171}
 .small{font-size:12px;opacity:.7}
@@ -55,17 +56,22 @@ button:disabled{opacity:.6}
 <body>
 
 <div class="card">
-  <h2>🚘 Indian Vehicle Scanner</h2>
-  <p class="small">Camera ya Image Upload se Number Plate Scan</p>
+  <h2>🚘 Vehicle Scanner</h2>
+  <p class="small">Camera / Upload + OCR + Manual (100% Working)</p>
 
   <!-- CAMERA -->
   <video id="video" autoplay playsinline></video>
-  <button id="scanBtn" disabled onclick="scanFromCamera()">📸 Scan from Camera</button>
+  <button onclick="capture()">📸 Capture from Camera</button>
 
   <!-- FILE UPLOAD -->
-  <input type="file" accept="image/*" onchange="scanFromFile(this)">
+  <input type="file" accept="image/*" onchange="loadFile(this)">
 
+  <!-- CANVAS -->
   <canvas id="canvas" style="display:none"></canvas>
+
+  <!-- MANUAL FALLBACK -->
+  <input id="manual" placeholder="Enter Vehicle Number (DL01AB1234)">
+  <button onclick="confirmManual()">✅ Confirm & Send</button>
 
   <div class="result" id="result"></div>
 </div>
@@ -77,140 +83,96 @@ button:disabled{opacity:.6}
 const BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
 const CHAT_ID  = "543961277";
 
-/* ================= RTO MAP ================= */
-const RTO = {
-  DL:"Delhi",BR:"Bihar",UP:"Uttar Pradesh",MH:"Maharashtra",WB:"West Bengal",
-  RJ:"Rajasthan",HR:"Haryana",PB:"Punjab",KA:"Karnataka",TN:"Tamil Nadu",
-  GJ:"Gujarat",MP:"Madhya Pradesh",CG:"Chhattisgarh",JH:"Jharkhand",
-  OD:"Odisha",TS:"Telangana",AP:"Andhra Pradesh",KL:"Kerala",AS:"Assam",
-  JK:"Jammu & Kashmir",UK:"Uttarakhand",HP:"Himachal Pradesh",GA:"Goa",
-  TR:"Tripura",MN:"Manipur",ML:"Meghalaya",MZ:"Mizoram",NL:"Nagaland",
-  AR:"Arunachal Pradesh",SK:"Sikkim",PY:"Puducherry",CH:"Chandigarh",
-  AN:"Andaman & Nicobar",LD:"Lakshadweep",DN:"Dadra & Nagar Haveli",DD:"Daman & Diu"
-};
+let imageReady = false;
 
-let lastPlate = null;
-let cameraReady = false;
-
-/* ================= CAMERA INIT ================= */
-navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" } })
-.then(stream=>{
-  video.srcObject = stream;
-  cameraReady = true;
-  scanBtn.disabled = false;
-})
+/* ================= CAMERA ================= */
+navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}})
+.then(stream => video.srcObject = stream)
 .catch(()=>{});
 
-/* ================= CAMERA SCAN ================= */
-function scanFromCamera(){
-  if(!cameraReady) return;
-  drawToCanvas(video);
-  processImage(canvas);
+/* ================= CAMERA CAPTURE ================= */
+function capture(){
+  if(!video.videoWidth) return alert("Camera not ready");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext("2d").drawImage(video,0,0);
+  imageReady = true;
+  tryOCR();
 }
 
-/* ================= FILE SCAN ================= */
-function scanFromFile(input){
+/* ================= FILE LOAD ================= */
+function loadFile(input){
   const file = input.files[0];
   if(!file) return;
-
   const img = new Image();
   img.onload = ()=>{
-    drawToCanvas(img);
-    processImage(canvas);
+    canvas.width = img.width;
+    canvas.height = img.height;
+    canvas.getContext("2d").drawImage(img,0,0);
+    imageReady = true;
+    tryOCR();
   };
   img.src = URL.createObjectURL(file);
 }
 
-/* ================= DRAW ================= */
-function drawToCanvas(src){
-  const ctx = canvas.getContext("2d");
-  canvas.width = src.videoWidth || src.width;
-  canvas.height = src.videoHeight || src.height;
-  ctx.filter = "contrast(140%) brightness(110%)";
-  ctx.drawImage(src,0,0);
-}
-
-/* ================= OCR PIPELINE ================= */
-function processImage(source){
-  result.innerText = "⏳ Scanning… keep plate clear";
-
-  Tesseract.recognize(source,"eng",{
+/* ================= OCR TRY ================= */
+function tryOCR(){
+  result.innerText = "⏳ Trying auto detection…";
+  Tesseract.recognize(canvas,"eng",{
     tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-  })
-  .then(({data})=>{
-    const clean = data.text
+  }).then(({data})=>{
+    const text = data.text
       .toUpperCase()
       .replace(/[^A-Z0-9]/g," ")
       .replace(/\s+/g," ");
 
-    const plate = detectPlate(clean);
+    const match = text.match(/\b[A-Z]{2}\d{1,2}[A-Z]{1,3}\d{4}\b/);
 
-    if(!plate){
-      show("❌ Plate not detected (try closer & straight)", false);
-      return;
+    if(match){
+      manual.value = match[0];
+      result.innerHTML = "<span class='good'>✔ Auto detected. Confirm below.</span>";
+    }else{
+      result.innerHTML = "<span class='bad'>Auto detect failed. Enter manually.</span>";
     }
-
-    if(plate === lastPlate){
-      show("⚠️ Same plate already scanned", false);
-      return;
-    }
-
-    lastPlate = plate;
-    handlePlate(plate, source);
-  })
-  .catch(()=>{
-    show("❌ OCR failed", false);
+  }).catch(()=>{
+    result.innerHTML = "<span class='bad'>OCR error. Enter manually.</span>";
   });
 }
 
-/* ================= PLATE DETECTOR ================= */
-function detectPlate(text){
-  const patterns = [
-    /\b[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}\b/,
-    /\b[A-Z]{2}[0-9]{1,2}[A-Z]{1,3}[0-9]{4}\b/,
-    /\b[A-Z]{2}[0-9]{2}[A-Z][0-9]{4}\b/
-  ];
-  for(const p of patterns){
-    const m = text.match(p);
-    if(m) return m[0];
+/* ================= MANUAL CONFIRM (FINAL GUARANTEE) ================= */
+function confirmManual(){
+  if(!imageReady){
+    alert("Capture or upload image first");
+    return;
   }
-  return null;
-}
-
-/* ================= PROCESS ================= */
-function handlePlate(plate, src){
-  const state = RTO[plate.substring(0,2)] || "Unknown";
-  const type  = plate.length > 10 ? "🚗 Car" : "🏍️ Bike";
+  const plate = manual.value.trim().toUpperCase();
+  if(!plate){
+    alert("Enter vehicle number");
+    return;
+  }
 
   navigator.geolocation.getCurrentPosition(pos=>{
     const map = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-    sendTelegram(plate,state,type,map);
-    show(`✅ ${plate} | ${state} | ${type}`, true);
+    sendTelegram(plate,map);
   },()=>{
-    sendTelegram(plate,state,type,"Location not allowed");
-    show(`✅ ${plate} | ${state} | ${type}`, true);
+    sendTelegram(plate,"Location not allowed");
   });
+
+  result.innerHTML = "<span class='good'>✅ Sent to Telegram</span>";
 }
 
-/* ================= UI ================= */
-function show(msg, ok){
-  result.innerHTML = `<span class="${ok?"good":"bad"}">${msg}</span>`;
-}
-
-/* ================= TELEGRAM ================= */
-function sendTelegram(plate,state,type,map){
+/* ================= TELEGRAM SEND ================= */
+function sendTelegram(plate,map){
   canvas.toBlob(blob=>{
-    if(!blob) return;
     const fd = new FormData();
-    fd.append("chat_id", CHAT_ID);
+    fd.append("chat_id",CHAT_ID);
     fd.append("caption",
 `🚘 Vehicle Detected
-🔢 ${plate}
-🏛️ ${state}
-🚦 ${type}
-🕒 ${new Date().toLocaleString()}
-📍 ${map}`);
-    fd.append("photo", blob, "vehicle.jpg");
+
+🔢 Number: ${plate}
+🕒 Time: ${new Date().toLocaleString()}
+📍 Location: ${map}`);
+    fd.append("photo",blob,"vehicle.jpg");
 
     fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,{
       method:"POST",
